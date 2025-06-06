@@ -8,7 +8,7 @@ def create_distribution_chart(df, group_col):
             xaxis_title=group_col,
             yaxis_title="Count",
             bargap=0.2,
-            height=300,
+            height=200,
             template='plotly_white'
         )
         return fig
