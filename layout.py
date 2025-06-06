@@ -316,7 +316,6 @@ def create_compact_layout(subgroup_options, color_options):
                         html.Div([
                             html.H6("Service Quality Rating", style={'color': '#1a237e', 'marginBottom': '15px', 'fontSize': '16px'}),
                             html.Div([
-                                # 每三项一行
                                 dbc.Row([
                                     dbc.Col([
                                         html.Label("Inflight wifi service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
