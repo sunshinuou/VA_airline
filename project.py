@@ -7,9 +7,81 @@ import dash_bootstrap_components as dbc
 from layout import create_compact_layout
 from modules.RaderChart import create_radar_chart
 from modules.ParallelCoordinates import create_parallel_coordinates
-from modules.Distribution import create_distribution_chart
+from modules.Distribution import create_distribution_chart, analyze_service_factors_by_group
 from preprocess import preprocess_airline_data
 from modules.mlPredictor import ml
+
+def generate_service_analysis_components(df, group_col='Class', service_attributes=None):
+    """
+    Generate Dash HTML components for service factor analysis
+    Only show analysis when Travel Class is selected
+    """
+    # Only show analysis for Travel Class (Class column)
+    if group_col != 'Class':
+        return html.Div("")  # Return empty div for other groupings
+    
+    if group_col not in df.columns or service_attributes is None:
+        return html.Div("Analysis not available", style={'color': '#666', 'fontStyle': 'italic'})
+    
+    # Ensure we have the satisfaction column
+    if 'satisfaction' not in df.columns:
+        return html.Div("Satisfaction data not available", style={'color': '#666', 'fontStyle': 'italic'})
+    
+    analysis_components = []
+    
+    # Get unique groups
+    groups = sorted(df[group_col].unique())
+    
+    for group in groups:
+        group_data = df[df[group_col] == group]
+        
+        # Calculate satisfaction rate
+        satisfaction_rate = (group_data['satisfaction'] == 'satisfied').mean() * 100
+        
+        # Calculate average ratings for service attributes
+        service_ratings = {}
+        for attr in service_attributes:
+            if attr in group_data.columns:
+                avg_rating = group_data[attr].mean()
+                service_ratings[attr] = avg_rating
+        
+        # Sort by average rating (descending)
+        top_services = sorted(service_ratings.items(), key=lambda x: x[1], reverse=True)[:5]
+        
+        # Create service factor list
+        service_list = []
+        for i, (service, rating) in enumerate(top_services, 1):
+            # Truncate long service names for better display
+            display_name = service if len(service) <= 25 else service[:22] + "..."
+            service_list.append(
+                html.P([
+                    f"{i}. {service:<25} ",
+                    #html.Span(f"{rating:.2f}", style={'color': '#2196f3', 'fontWeight': 'bold'})
+                ], style={'margin': '3px 0', 'fontSize': '13px'})
+            )
+        
+        # Create group analysis component
+        group_component = html.Div([
+            html.H6(f"--- {group} Class ---", 
+                   style={'color': '#1a237e', 'fontWeight': 'bold', 'marginBottom': '10px'}),
+            html.P([
+                "Satisfaction Rate: ",
+                html.Span(f"{satisfaction_rate:.2f}%", style={'color': '#4caf50', 'fontWeight': 'bold'})
+            ], style={'marginBottom': '10px'}),
+            html.P("Top service factors (by average rating):", 
+                  style={'marginBottom': '8px', 'fontWeight': 'bold'}),
+            html.Div(service_list, style={'marginLeft': '15px'})
+        ], style={
+            'marginBottom': '25px', 
+            'padding': '15px', 
+            'borderLeft': '4px solid #1a237e', 
+            'backgroundColor': '#f8f9fa',
+            'borderRadius': '0 5px 5px 0'
+        })
+        
+        analysis_components.append(group_component)
+    
+    return html.Div(analysis_components)
 
 def load_and_validate_data(file_path):
     """
@@ -62,12 +134,13 @@ def create_dash_app(df, service_attributes):
     app.server.predict_func = predict_func
     app.server.prediction_accuracy = accuracy
     
-    # Callbacks
+    # Updated callbacks with service analysis
     @app.callback(
         [Output('radar-chart', 'figure'),
          Output('parallel-coords', 'figure'),
          Output('summary-stats-container', 'children'),
-         Output('distribution-chart', 'figure')],
+         Output('distribution-chart', 'figure'),
+         Output('service-analysis-content', 'children')],
         [Input('subgroup-dropdown', 'value'),
          Input('color-dropdown', 'value'),
          Input('sample-dropdown', 'value'),
@@ -80,14 +153,18 @@ def create_dash_app(df, service_attributes):
         else:
             sampled_df = df.copy()
         
-        # Update distribution chart with sampled data
+        # Update distribution chart with sampled data (now pie chart)
         distribution_fig = create_distribution_chart(sampled_df, group_col=dist_group_col)
+        
         # Update radar chart with sampled data
         radar_fig = create_radar_chart(sampled_df, service_attributes, selected_subgroup)
+        
         # Update parallel coordinates with sampled data
         parallel_fig = create_parallel_coordinates(sampled_df, service_attributes, color_by, sample_size)
+        
         # Generate summary statistics using sampled data
         total_passengers = len(sampled_df)
+        
         # Return the summary stats div directly (no wrapper id)
         summary_items = html.Div([
             html.Div([
@@ -105,7 +182,15 @@ def create_dash_app(df, service_attributes):
                 html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'})
         ], style={'display': 'flex', 'justifyContent': 'space-between', 'minHeight': '80px', 'marginBottom': '6px'})
-        return radar_fig, parallel_fig, summary_items, distribution_fig
+        
+        # Generate service analysis content
+        service_analysis_content = generate_service_analysis_components(
+            sampled_df, 
+            group_col=dist_group_col, 
+            service_attributes=service_attributes
+        )
+        
+        return radar_fig, parallel_fig, summary_items, distribution_fig, service_analysis_content
     
     @app.callback(
         Output('prediction-result', 'children'),
@@ -218,6 +303,7 @@ def main():
     # machine learning model training and prediction
     accuracy, predict_func = ml(df_processed, service_attributes)
     print(f"\nXGBoost model accuracy on test set: {accuracy:.4f}")
+    
     # example passenger info
     sample_passenger = {
         'Gender': 'Male',
@@ -258,4 +344,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

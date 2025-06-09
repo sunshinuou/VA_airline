@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 
 def create_compact_layout(subgroup_options, color_options):
     """
-    Compact layout with dropdown below radar chart
+    Compact layout with pie chart and detailed service analysis
     """
     return dbc.Container([
         # Header
@@ -47,6 +47,7 @@ def create_compact_layout(subgroup_options, color_options):
                             )
                         ], style={'float': 'right', 'marginTop': '5px', 'marginBottom': 0})
                     ], style={'marginBottom': '8px'}),
+                    
                     # Summary stats (direct child, with id for dynamic update)
                     html.Div([
                         # Total Passengers
@@ -65,6 +66,7 @@ def create_compact_layout(subgroup_options, color_options):
                             html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
                         ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'})
                     ], id='summary-stats-container', style={'display': 'flex', 'justifyContent': 'space-between', 'minHeight': '80px', 'marginBottom': '6px'}),
+                    
                     # Group by for distribution chart (direct child)
                     html.Div([
                         html.Label("Group by:", 
@@ -82,28 +84,46 @@ def create_compact_layout(subgroup_options, color_options):
                             clearable=False,
                             style={
                                 'fontSize': '13px',
-                                'marginBottom': 0
+                                'marginBottom': '8px'
                             },
                             optionHeight=40,
                             maxHeight=200
                         )
                     ], style={'marginBottom': '4px'}),
-                    # distribution chart area (flex: 1)
+                    
+                    # Pie chart area
                     dcc.Graph(
                         id='distribution-chart',
                         style={
                             'width': '100%',
-                            'flex': '1',
-                            'minHeight': '200px',
-                            'marginBottom': 0
+                            'height': '300px',
+                            'marginBottom': '10px'
                         },
                         config={
                             'displayModeBar': False
                         }
-                    )
+                    ),
+                    
+                    # Service Analysis Area (scrollable)
+                    html.Div([
+                        html.H6("Service Factor Analysis", 
+                               style={'color': '#1a237e', 'fontWeight': 'bold', 'marginBottom': '10px'}),
+                        html.Div(
+                            id='service-analysis-content',
+                            style={
+                                'maxHeight': '200px',
+                                'overflowY': 'auto',
+                                'fontSize': '12px',
+                                'backgroundColor': '#fafafa',
+                                'padding': '10px',
+                                'borderRadius': '5px',
+                                'border': '1px solid #e0e0e0'
+                            }
+                        )
+                    ])
                 ], className="module-container", style={
                     'width': '30%',
-                    'height': '60vh',
+                    'height': '80vh',  # Increased height to accommodate analysis
                     'float': 'left',
                     'margin': '0 1.5% 1.5% 0',
                     'padding': '15px',
@@ -114,6 +134,7 @@ def create_compact_layout(subgroup_options, color_options):
                     'display': 'flex',
                     'flexDirection': 'column'
                 }),
+                
                 # Right: Parallel Coordinates
                 html.Div([
                     html.H5("Parallel Coordinates", className="mb-3", style={'color': '#1a237e'}),
@@ -128,7 +149,7 @@ def create_compact_layout(subgroup_options, color_options):
                             )
                         ], width=12)
                     ], className="mb-2"),
-                    dcc.Graph(id='parallel-coords', style={'height': '250px'})
+                    dcc.Graph(id='parallel-coords', style={'height': '350px'})
                 ], className="module-container", style={
                     'width': '67%', 'height': '60vh', 'float': 'right',
                     'margin': '0 0 1.5% 0', 'padding': '15px',
@@ -136,6 +157,7 @@ def create_compact_layout(subgroup_options, color_options):
                     'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'
                 })
             ], style={'overflow': 'hidden'}),
+            
             # Row 2: Radar Chart + Predictive Analysis
             html.Div([
                 # Left: Radar Chart with dropdown at top
@@ -143,7 +165,7 @@ def create_compact_layout(subgroup_options, color_options):
                     # Title and dropdown area at top
                     html.Div([
                         html.H5("Service Quality Radar", 
-                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'center'}),
+                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left'}),
                         html.Div([
                             html.Label("Group by:", 
                                      style={
@@ -188,7 +210,7 @@ def create_compact_layout(subgroup_options, color_options):
                     })
                 ], className="module-container", style={
                     'width': '30%', 
-                    'height': '70vh',  # Increased container height
+                    'height': '50vh',  # Adjusted height for better proportions
                     'float': 'left',
                     'margin': '0 1.5% 0 0', 
                     'padding': '15px',
@@ -518,7 +540,7 @@ def create_compact_layout(subgroup_options, color_options):
                     ], style={'padding': '20px'})
                 ], className="module-container", style={
                     'width': '67%', 
-                    'height': '70vh',
+                    'height': '50vh',  # Adjusted height to match radar chart
                     'float': 'right',
                     'margin': '0', 
                     'padding': '15px',
