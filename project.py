@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 from layout import create_compact_layout
 from modules.RaderChart import create_radar_chart
 from modules.ParallelCoordinates import create_parallel_coordinates
-from modules.Distribution import create_distribution_chart, analyze_service_factors_by_group
+from modules.Distribution import create_distribution_chart
 from preprocess import preprocess_airline_data
 from modules.mlPredictor import ml
 
@@ -126,8 +126,29 @@ def create_dash_app(df, service_attributes):
     # Filter color options based on available columns
     color_options = [opt for opt in color_options if opt['value'] in df.columns or opt['value'] == 'satisfaction']
     
+    # Define parallel coordinates dimension options
+    pc_dimension_options = [
+        {'label': 'Flight Distance', 'value': 'Flight Distance'},
+        {'label': 'Departure Delay', 'value': 'Departure Delay'},
+        {'label': 'Arrival Delay', 'value': 'Arrival Delay'},
+        {'label': 'Seat Comfort', 'value': 'Seat comfort'},
+        {'label': 'Food and Drink', 'value': 'Food and drink'},
+        {'label': 'Inflight Entertainment', 'value': 'Inflight entertainment'},
+        {'label': 'Inflight WiFi', 'value': 'Inflight wifi service'},
+        {'label': 'Cleanliness', 'value': 'Cleanliness'},
+        {'label': 'Online Boarding', 'value': 'Online boarding'},
+        {'label': 'Gate Location', 'value': 'Gate location'},
+        {'label': 'On-board Service', 'value': 'On-board service'},
+        {'label': 'Leg Room', 'value': 'Leg room service'},
+        {'label': 'Baggage Handling', 'value': 'Baggage handling'},
+        {'label': 'Check-in Service', 'value': 'Checkin service'},
+        {'label': 'Inflight Service', 'value': 'Inflight service'},
+        {'label': 'Time Convenience', 'value': 'Departure/Arrival time convenient'},
+        {'label': 'Online Booking', 'value': 'Ease of Online booking'}
+    ]
+    
     # Set the compact layout
-    app.layout = create_compact_layout(subgroup_options, color_options)
+    app.layout = create_compact_layout(subgroup_options, color_options, pc_dimension_options)
     
     # Store the prediction function and accuracy in app.server
     accuracy, predict_func = ml(df, service_attributes)
@@ -144,9 +165,10 @@ def create_dash_app(df, service_attributes):
         [Input('subgroup-dropdown', 'value'),
          Input('color-dropdown', 'value'),
          Input('sample-dropdown', 'value'),
-         Input('subgroup-dropdown-distribution', 'value')]
+         Input('subgroup-dropdown-distribution', 'value'),
+         Input('pc-dimensions-dropdown', 'value')]
     )
-    def update_charts(selected_subgroup, color_by, sample_size, dist_group_col):
+    def update_charts(selected_subgroup, color_by, sample_size, dist_group_col, selected_dimensions):
         # Apply sampling to the entire dataset
         if sample_size > 0 and len(df) > sample_size:
             sampled_df = df.sample(n=sample_size, random_state=42)
@@ -159,8 +181,8 @@ def create_dash_app(df, service_attributes):
         # Update radar chart with sampled data
         radar_fig = create_radar_chart(sampled_df, service_attributes, selected_subgroup)
         
-        # Update parallel coordinates with sampled data
-        parallel_fig = create_parallel_coordinates(sampled_df, service_attributes, color_by, sample_size)
+        # Update parallel coordinates with sampled data and selected dimensions
+        parallel_fig = create_parallel_coordinates(sampled_df, service_attributes, color_by, sample_size, selected_dimensions)
         
         # Generate summary statistics using sampled data
         total_passengers = len(sampled_df)

@@ -1,7 +1,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
-def create_compact_layout(subgroup_options, color_options):
+def create_compact_layout(subgroup_options, color_options, pc_dimension_options):
     """
     Compact layout with pie chart and detailed service analysis
     """
@@ -149,7 +149,21 @@ def create_compact_layout(subgroup_options, color_options):
                             )
                         ], width=12)
                     ], className="mb-2"),
-                    dcc.Graph(id='parallel-coords', style={'height': '350px'})
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("Select Dimensions (max 8):", style={'fontWeight': 'bold'}),
+                            dcc.Dropdown(
+                                id='pc-dimensions-dropdown',
+                                options=pc_dimension_options,
+                                value=['Flight Distance', 'Departure Delay', 'Arrival Delay', 
+                                      'Seat comfort', 'Food and drink', 'Inflight entertainment'],
+                                multi=True,
+                                clearable=False,
+                                maxHeight=200
+                            )
+                        ], width=12)
+                    ], className="mb-2"),
+                    dcc.Graph(id='parallel-coords', style={'height': '300px'})
                 ], className="module-container", style={
                     'width': '67%', 'height': '60vh', 'float': 'right',
                     'margin': '0 0 1.5% 0', 'padding': '15px',
@@ -350,7 +364,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Departure/Arrival time convenient", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -362,7 +376,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Ease of Online booking", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -374,9 +388,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4)
-                                ], className="mb-3"),
-                                dbc.Row([
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Gate location", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -388,7 +400,9 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3)
+                                ], className="mb-3"),
+                                dbc.Row([
                                     dbc.Col([
                                         html.Label("Food and drink", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -400,7 +414,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Online boarding", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -412,9 +426,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4)
-                                ], className="mb-3"),
-                                dbc.Row([
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Seat comfort", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -426,7 +438,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Inflight entertainment", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -438,7 +450,9 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3)
+                                ], className="mb-3"),
+                                dbc.Row([
                                     dbc.Col([
                                         html.Label("On-board service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -450,9 +464,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4)
-                                ], className="mb-3"),
-                                dbc.Row([
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Leg room service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -464,7 +476,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Baggage handling", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -476,7 +488,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Checkin service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -488,7 +500,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4)
+                                    ], width=3)
                                 ], className="mb-3"),
                                 dbc.Row([
                                     dbc.Col([
@@ -502,7 +514,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4),
+                                    ], width=3),
                                     dbc.Col([
                                         html.Label("Cleanliness", style={'fontSize': '13px', 'fontWeight': 'bold'}),
                                         dcc.Slider(
@@ -514,7 +526,7 @@ def create_compact_layout(subgroup_options, color_options):
                                             marks={i: str(i) for i in range(6)},
                                             tooltip={"placement": "bottom", "always_visible": False}
                                         )
-                                    ], width=4)
+                                    ], width=3)
                                 ], className="mb-3")
                             ])
                         ], className="mb-4"),

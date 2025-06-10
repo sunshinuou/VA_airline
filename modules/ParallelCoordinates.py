@@ -1,8 +1,14 @@
 import plotly.graph_objects as go
 
-def create_parallel_coordinates(df, service_attributes, color_by='satisfaction', sample_size=5000):
+def create_parallel_coordinates(df, service_attributes, color_by='satisfaction', sample_size=5000, selected_dimensions=None):
     """
     Create interactive parallel coordinates plot with error handling
+    Args:
+        df: DataFrame containing the data
+        service_attributes: List of service attributes
+        color_by: Column to color the lines by
+        sample_size: Number of samples to display
+        selected_dimensions: List of selected dimensions to display (max 8)
     """
     if not service_attributes:
         return go.Figure().add_annotation(text="No service attributes available", 
@@ -17,26 +23,45 @@ def create_parallel_coordinates(df, service_attributes, color_by='satisfaction',
     # Add numerical columns for visualization
     dimensions = []
     
-    # Add key operational metrics if they exist
-    if 'Flight Distance' in plot_data.columns:
-        dimensions.append(dict(label="Flight Distance", values=plot_data['Flight Distance']))
-    if 'Departure Delay in Minutes' in plot_data.columns:
-        dimensions.append(dict(label="Departure Delay", values=plot_data['Departure Delay in Minutes']))
-    if 'Arrival Delay in Minutes' in plot_data.columns:
-        dimensions.append(dict(label="Arrival Delay", values=plot_data['Arrival Delay in Minutes']))
+    # Define all possible dimensions
+    all_dimensions = {
+        'Flight Distance': 'Flight Distance',
+        'Departure Delay': 'Departure Delay in Minutes',
+        'Arrival Delay': 'Arrival Delay in Minutes',
+        'Seat comfort': 'Seat comfort',
+        'Food and drink': 'Food and drink',
+        'Inflight entertainment': 'Inflight entertainment',
+        'Inflight wifi service': 'Inflight wifi service',
+        'Cleanliness': 'Cleanliness',
+        'Online boarding': 'Online boarding',
+        'Gate location': 'Gate location',
+        'On-board service': 'On-board service',
+        'Leg room service': 'Leg room service',
+        'Baggage handling': 'Baggage handling',
+        'Checkin service': 'Checkin service',
+        'Inflight service': 'Inflight service',
+        'Departure/Arrival time convenient': 'Departure/Arrival time convenient',
+        'Ease of Online booking': 'Ease of Online booking'
+    }
     
-    # Add service attributes (limit to key ones to avoid overcrowding)
-    key_services = ['Seat comfort', 'Food and drink', 'Inflight entertainment', 
-                   'Inflight wifi service', 'Cleanliness']
+    # If no dimensions are selected, use default ones
+    if not selected_dimensions:
+        selected_dimensions = ['Flight Distance', 'Departure Delay', 'Arrival Delay', 
+                             'Seat comfort', 'Food and drink', 'Inflight entertainment']
     
-    for service in key_services:
-        if service in service_attributes and service in plot_data.columns:
-            service_data = plot_data[service].dropna()
-            if len(service_data) > 0:
+    # Limit to 8 dimensions
+    selected_dimensions = selected_dimensions[:8]
+    
+    # Add selected dimensions
+    for dim in selected_dimensions:
+        if dim in all_dimensions and all_dimensions[dim] in plot_data.columns:
+            col_name = all_dimensions[dim]
+            data = plot_data[col_name].dropna()
+            if len(data) > 0:
                 dimensions.append(dict(
-                    label=service, 
-                    values=plot_data[service], 
-                    range=[service_data.min(), service_data.max()]
+                    label=dim,
+                    values=plot_data[col_name],
+                    range=[data.min(), data.max()]
                 ))
     
     if not dimensions:
@@ -66,8 +91,7 @@ def create_parallel_coordinates(df, service_attributes, color_by='satisfaction',
     ))
     
     fig.update_layout(
-        #title="Parallel Coordinates: Service Factors vs Satisfaction",
-        height=250,
+        height=200,  # Reduced height
         margin=dict(l=50, r=50, t=40, b=50)
     )
     
