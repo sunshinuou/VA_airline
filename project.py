@@ -8,80 +8,51 @@ from layout import create_compact_layout
 from modules.RaderChart import create_radar_chart
 from modules.ParallelCoordinates import create_parallel_coordinates
 from modules.Distribution import create_distribution_chart
-from preprocess import preprocess_airline_data
-from modules.mlPredictor import ml
+from modules.ParallelCoordinates import create_parallel_coordinates, create_parallel_categories_chart
+from modules.ServiceFactor import create_service_factors_chart, generate_subgroup_info_header
 
-def generate_service_analysis_components(df, group_col='Class', service_attributes=None):
+def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgroup=None):
     """
-    Generate Dash HTML components for service factor analysis
-    Only show analysis when Travel Class is selected
+    Generate simplified header with only Satisfaction and Avg Service (2 metrics)
     """
-    # Only show analysis for Travel Class (Class column)
-    if group_col != 'Class':
-        return html.Div("")  # Return empty div for other groupings
+    if group_col not in df.columns:
+        return html.Div("No subgroup data available", style={'color': '#666'})
     
-    if group_col not in df.columns or service_attributes is None:
-        return html.Div("Analysis not available", style={'color': '#666', 'fontStyle': 'italic'})
-    
-    # Ensure we have the satisfaction column
-    if 'satisfaction' not in df.columns:
-        return html.Div("Satisfaction data not available", style={'color': '#666', 'fontStyle': 'italic'})
-    
-    analysis_components = []
-    
-    # Get unique groups
     groups = sorted(df[group_col].unique())
     
-    for group in groups:
-        group_data = df[df[group_col] == group]
-        
-        # Calculate satisfaction rate
-        satisfaction_rate = (group_data['satisfaction'] == 'satisfied').mean() * 100
-        
-        # Calculate average ratings for service attributes
-        service_ratings = {}
-        for attr in service_attributes:
-            if attr in group_data.columns:
-                avg_rating = group_data[attr].mean()
-                service_ratings[attr] = avg_rating
-        
-        # Sort by average rating (descending)
-        top_services = sorted(service_ratings.items(), key=lambda x: x[1], reverse=True)[:5]
-        
-        # Create service factor list
-        service_list = []
-        for i, (service, rating) in enumerate(top_services, 1):
-            # Truncate long service names for better display
-            display_name = service if len(service) <= 25 else service[:22] + "..."
-            service_list.append(
-                html.P([
-                    f"{i}. {service:<25} ",
-                    #html.Span(f"{rating:.2f}", style={'color': '#2196f3', 'fontWeight': 'bold'})
-                ], style={'margin': '3px 0', 'fontSize': '13px'})
-            )
-        
-        # Create group analysis component
-        group_component = html.Div([
-            html.H6(f"--- {group} Class ---", 
-                   style={'color': '#1a237e', 'fontWeight': 'bold', 'marginBottom': '10px'}),
-            html.P([
-                "Satisfaction Rate: ",
-                html.Span(f"{satisfaction_rate:.2f}%", style={'color': '#4caf50', 'fontWeight': 'bold'})
-            ], style={'marginBottom': '10px'}),
-            html.P("Top service factors (by average rating):", 
-                  style={'marginBottom': '8px', 'fontWeight': 'bold'}),
-            html.Div(service_list, style={'marginLeft': '15px'})
-        ], style={
-            'marginBottom': '25px', 
-            'padding': '15px', 
-            'borderLeft': '4px solid #1a237e', 
-            'backgroundColor': '#f8f9fa',
-            'borderRadius': '0 5px 5px 0'
-        })
-        
-        analysis_components.append(group_component)
+    if selected_subgroup is None or selected_subgroup not in groups:
+        selected_subgroup = groups[0] if groups else None
     
-    return html.Div(analysis_components)
+    if selected_subgroup is None:
+        return html.Div("No subgroup selected", style={'color': '#666'})
+    
+    # Get subgroup data
+    subgroup_data = df[df[group_col] == selected_subgroup]
+    
+    if len(subgroup_data) == 0:
+        return html.Div(f"No data for {selected_subgroup}", style={'color': '#666'})
+    
+    # Calculate metrics - only 2 metrics
+    satisfaction_rate = 0
+    if 'satisfaction' in df.columns:
+        satisfaction_rate = (subgroup_data['satisfaction'] == 'satisfied').mean() * 100
+    
+    service_score = 0
+    if 'Service_Quality_Score' in subgroup_data.columns:
+        service_score = subgroup_data['Service_Quality_Score'].mean()
+    
+    return html.Div([
+        html.H6(f"Analysis for {selected_subgroup}", 
+               style={'color': '#1a237e', 'marginBottom': '8px', 'fontWeight': 'bold'}),
+        html.Div([
+            html.Span(f"Satisfaction: {satisfaction_rate:.1f}%", 
+                     style={'marginRight': '20px', 'fontSize': '12px', 'color': '#4caf50'}),
+            html.Span(f"Avg Service: {service_score:.2f}/5.0", 
+                     style={'fontSize': '12px', 'color': '#2196f3'})
+        ])
+    ])
+from preprocess import preprocess_airline_data
+from modules.mlPredictor import ml
 
 def load_and_validate_data(file_path):
     """
@@ -117,87 +88,96 @@ def create_dash_app(df, service_attributes):
         if value in df.columns:
             subgroup_options.append({'label': label, 'value': value})
     
-    color_options = [
-        {'label': 'Satisfaction', 'value': 'satisfaction'},
-        {'label': 'Age', 'value': 'Age'},
-        {'label': 'Flight Distance', 'value': 'Flight Distance'}
-    ]
-    
-    # Filter color options based on available columns
-    color_options = [opt for opt in color_options if opt['value'] in df.columns or opt['value'] == 'satisfaction']
-    
-    # Define parallel coordinates dimension options
+    # Define parallel categories dimension options
     pc_dimension_options = [
-        {'label': 'Flight Distance', 'value': 'Flight Distance'},
-        {'label': 'Departure Delay', 'value': 'Departure Delay'},
-        {'label': 'Arrival Delay', 'value': 'Arrival Delay'},
-        {'label': 'Seat Comfort', 'value': 'Seat comfort'},
-        {'label': 'Food and Drink', 'value': 'Food and drink'},
-        {'label': 'Inflight Entertainment', 'value': 'Inflight entertainment'},
-        {'label': 'Inflight WiFi', 'value': 'Inflight wifi service'},
-        {'label': 'Cleanliness', 'value': 'Cleanliness'},
-        {'label': 'Online Boarding', 'value': 'Online boarding'},
-        {'label': 'Gate Location', 'value': 'Gate location'},
-        {'label': 'On-board Service', 'value': 'On-board service'},
-        {'label': 'Leg Room', 'value': 'Leg room service'},
-        {'label': 'Baggage Handling', 'value': 'Baggage handling'},
-        {'label': 'Check-in Service', 'value': 'Checkin service'},
-        {'label': 'Inflight Service', 'value': 'Inflight service'},
-        {'label': 'Time Convenience', 'value': 'Departure/Arrival time convenient'},
-        {'label': 'Online Booking', 'value': 'Ease of Online booking'}
+        {'label': 'Customer Type', 'value': 'Customer Type'},
+        {'label': 'Gender', 'value': 'Gender'},
+        {'label': 'Class', 'value': 'Class'},
+        {'label': 'Type of Travel', 'value': 'Type of Travel'},
+        {'label': 'Age Group', 'value': 'Age Group'},
+        {'label': 'Satisfaction', 'value': 'Satisfaction'},
+        {'label': 'Departure Delay Category', 'value': 'Departure Delay Category'},
+        {'label': 'Arrival Delay Category', 'value': 'Arrival Delay Category'}
     ]
     
-    # Set the compact layout
-    app.layout = create_compact_layout(subgroup_options, color_options, pc_dimension_options)
+    # Set the compact layout with proper options
+    app.layout = create_compact_layout(subgroup_options, None, pc_dimension_options)
     
     # Store the prediction function and accuracy in app.server
     accuracy, predict_func = ml(df, service_attributes)
     app.server.predict_func = predict_func
     app.server.prediction_accuracy = accuracy
     
-    # Updated callbacks with service analysis
+    # Callback to populate service factors subgroup dropdown based on dataset overview selection
+    @app.callback(
+        [Output('service-factors-subgroup-dropdown', 'options'),
+         Output('service-factors-subgroup-dropdown', 'value')],
+        [Input('subgroup-dropdown-distribution', 'value')]
+    )
+    def update_service_factors_subgroup_options(selected_subgroup_type):
+        if selected_subgroup_type and selected_subgroup_type in df.columns:
+            # Get unique values for the selected subgroup type
+            unique_values = sorted(df[selected_subgroup_type].unique())
+            options = [{'label': val, 'value': val} for val in unique_values]
+            default_value = unique_values[0] if unique_values else None
+            return options, default_value
+        else:
+            return [], None
+    
+    # One-way sync: Dataset Overview → Radar Chart (only when Dataset Overview changes)
+    @app.callback(
+        Output('subgroup-dropdown', 'value'),
+        [Input('subgroup-dropdown-distribution', 'value')],
+        prevent_initial_call=True
+    )
+    def sync_radar_from_dataset(dist_group_col):
+        return dist_group_col
+    
+    # Main callback for all charts - responds to both dropdowns independently
     @app.callback(
         [Output('radar-chart', 'figure'),
          Output('parallel-coords', 'figure'),
          Output('summary-stats-container', 'children'),
          Output('distribution-chart', 'figure'),
-         Output('service-analysis-content', 'children')],
-        [Input('subgroup-dropdown', 'value'),
-         Input('color-dropdown', 'value'),
+         Output('service-factors-chart', 'figure'),
+         Output('subgroup-info-header', 'children')],
+        [Input('subgroup-dropdown-distribution', 'value'),  # Dataset Overview
+         Input('subgroup-dropdown', 'value'),               # Radar Chart (independent)
          Input('sample-dropdown', 'value'),
-         Input('subgroup-dropdown-distribution', 'value'),
-         Input('pc-dimensions-dropdown', 'value')]
+         Input('pc-dimensions-dropdown', 'value'),
+         Input('service-factors-subgroup-dropdown', 'value')]
     )
-    def update_charts(selected_subgroup, color_by, sample_size, dist_group_col, selected_dimensions):
+    def update_charts(dataset_subgroup, radar_subgroup, sample_size, selected_dimensions, selected_specific_subgroup):
         # Apply sampling to the entire dataset
         if sample_size > 0 and len(df) > sample_size:
             sampled_df = df.sample(n=sample_size, random_state=42)
         else:
             sampled_df = df.copy()
         
-        # Update distribution chart with sampled data (now pie chart)
-        distribution_fig = create_distribution_chart(sampled_df, group_col=dist_group_col)
+        # Dataset Overview and Distribution Chart use dataset_subgroup
+        distribution_fig = create_distribution_chart(sampled_df, group_col=dataset_subgroup)
         
-        # Update radar chart with sampled data
-        radar_fig = create_radar_chart(sampled_df, service_attributes, selected_subgroup)
+        # Radar Chart uses its own independent selection (radar_subgroup)
+        radar_fig = create_radar_chart(sampled_df, service_attributes, radar_subgroup)
         
-        # Update parallel coordinates with sampled data and selected dimensions
-        parallel_fig = create_parallel_coordinates(sampled_df, service_attributes, color_by, sample_size, selected_dimensions)
+        # Update parallel categories with sampled data and selected dimensions
+        parallel_fig = create_parallel_categories_chart(sampled_df, selected_dimensions, sample_size)
         
-        # Generate summary statistics using sampled data
+        # Generate summary statistics - Keep 3 metrics (Passengers, Satisfaction, Avg Service)
         total_passengers = len(sampled_df)
-        
-        # Return the summary stats div directly (no wrapper id)
         summary_items = html.Div([
+            # Total Passengers
             html.Div([
                 html.H4(f"{total_passengers:,}", style={'color': '#d32f2f', 'margin': '0', 'fontSize': '20px'}),
                 html.P("Total Passengers", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
+            # Satisfaction Rate
             html.Div([
                 html.H4(f"{(sampled_df['satisfaction'] == 'satisfied').mean() * 100:.1f}%", 
                        style={'color': '#4caf50', 'margin': '0', 'fontSize': '20px'}),
                 html.P("Satisfaction Rate", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
+            # Avg Service Score
             html.Div([
                 html.H4(f"{sampled_df['Service_Quality_Score'].mean():.2f}/5.0", 
                        style={'color': '#2196f3', 'margin': '0', 'fontSize': '20px'}),
@@ -205,14 +185,24 @@ def create_dash_app(df, service_attributes):
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'})
         ], style={'display': 'flex', 'justifyContent': 'space-between', 'minHeight': '80px', 'marginBottom': '6px'})
         
-        # Generate service analysis content
-        service_analysis_content = generate_service_analysis_components(
+        # Service Factor Rankings uses dataset_subgroup (controlled by Dataset Overview)
+        service_factors_fig = create_service_factors_chart(
             sampled_df, 
-            group_col=dist_group_col, 
-            service_attributes=service_attributes
+            service_attributes, 
+            group_col=dataset_subgroup,
+            selected_subgroup=selected_specific_subgroup,
+            chart_type='rf_importance'  # Always use RF Impact
         )
         
-        return radar_fig, parallel_fig, summary_items, distribution_fig, service_analysis_content
+        # Generate subgroup info header (only 2 metrics: Satisfaction, Avg Service)
+        subgroup_info = generate_subgroup_info_header_simple(
+            sampled_df, 
+            group_col=dataset_subgroup,
+            selected_subgroup=selected_specific_subgroup
+        )
+        
+        return (radar_fig, parallel_fig, summary_items, distribution_fig, 
+                service_factors_fig, subgroup_info)
     
     @app.callback(
         Output('prediction-result', 'children'),
