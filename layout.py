@@ -3,7 +3,7 @@ import dash_bootstrap_components as dbc
 
 def create_compact_layout(subgroup_options, color_options=None, pc_dimension_options=None):
     """
-    Compact layout with pie chart and detailed service analysis
+    Compact layout with clustering properly integrated into predictive analysis module
     """
     # Default options for parallel categories if not provided
     if not pc_dimension_options:
@@ -18,7 +18,6 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
             {'label': 'Arrival Delay Category', 'value': 'Arrival Delay Category'}
         ]
     
-    # We don't need color options for parallel categories, so remove the color dropdown
     return dbc.Container([
         # Header
         dbc.Row([
@@ -283,7 +282,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                 })
             ], style={'overflow': 'hidden'}),
             
-            # Row 2: Parallel Categories + Predictive Analysis
+            # Row 2: Parallel Categories + Predictive Analysis (with Clustering inside)
             html.Div([
                 # Left: Parallel Categories
                 html.Div([
@@ -313,318 +312,33 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                     'borderRadius': '8px', 
                     'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'
                 }),
-                # Right: Predictive Analysis
+                
+                # Right: Passenger Segmentation Analysis (containing clustering functionality)
                 html.Div([
-                    html.H5("Predictive Analysis", className="mb-3", style={'color': '#1a237e'}),
+                    html.H5("Passenger Segmentation Analysis", className="mb-3", style={'color': '#1a237e'}),
+                    
+                    # Chart selection dropdown for clustering analysis
                     html.Div([
-                        # Personal Info Section
-                        html.Div([
-                            html.H6("Personal Information", style={'color': '#1a237e', 'marginBottom': '15px', 'fontSize': '16px'}),
-                            dbc.Row([
-                                dbc.Col([
-                                    html.Label("Gender", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                    dcc.Dropdown(
-                                        id='gender-dropdown',
-                                        options=[
-                                            {'label': 'Male', 'value': 'Male'},
-                                            {'label': 'Female', 'value': 'Female'}
-                                        ],
-                                        value='Male',
-                                        style={'fontSize': '13px'}
-                                    )
-                                ], width=6, style={'display': 'flex', 'flexDirection': 'column', 'justifyContent': 'center'}),
-                                dbc.Col([
-                                    html.Label("Age", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                    dcc.Input(
-                                        id='age-input',
-                                        type='number',
-                                        value=35,
-                                        min=0,
-                                        max=120,
-                                        style={'fontSize': '13px', 'width': '100%'}
-                                    )
-                                ], width=6, style={'display': 'flex', 'flexDirection': 'column', 'justifyContent': 'center'})
-                            ], className="mb-2", align='center'),
-                            dbc.Row([
-                                dbc.Col([
-                                    html.Label("Customer Type", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                    dcc.Dropdown(
-                                        id='customer-type-dropdown',
-                                        options=[
-                                            {'label': 'Loyal Customer', 'value': 'Loyal Customer'},
-                                            {'label': 'Disloyal Customer', 'value': 'Disloyal Customer'}
-                                        ],
-                                        value='Loyal Customer',
-                                        style={'fontSize': '13px'}
-                                    )
-                                ], width=4),
-                                dbc.Col([
-                                    html.Label("Type of Travel", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                    dcc.Dropdown(
-                                        id='travel-type-dropdown',
-                                        options=[
-                                            {'label': 'Business travel', 'value': 'Business travel'},
-                                            {'label': 'Personal Travel', 'value': 'Personal Travel'}
-                                        ],
-                                        value='Business travel',
-                                        style={'fontSize': '13px'}
-                                    )
-                                ], width=4),
-                                dbc.Col([
-                                    html.Label("Class", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                    dcc.Dropdown(
-                                        id='class-dropdown',
-                                        options=[
-                                            {'label': 'Business', 'value': 'Business'},
-                                            {'label': 'Eco', 'value': 'Eco'},
-                                            {'label': 'Eco Plus', 'value': 'Eco Plus'}
-                                        ],
-                                        value='Business',
-                                        style={'fontSize': '13px'}
-                                    )
-                                ], width=4)
-                            ], className="mb-3", align='center')
-                        ], className="mb-4"),
-                        
-                        # Flight Info Section
-                        html.Div([
-                            html.H6("Flight Information", style={'color': '#1a237e', 'marginBottom': '15px', 'fontSize': '16px'}),
-                            dbc.Row([
-                                dbc.Col([
-                                    html.Label("Flight Distance (miles)", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                    dcc.Input(
-                                        id='flight-distance-input',
-                                        type='number',
-                                        value=1000,
-                                        min=0,
-                                        style={'fontSize': '13px', 'width': '100%'}
-                                    )
-                                ], width=4),
-                                dbc.Col([
-                                    html.Label("Departure Delay (minutes)", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                    dcc.Input(
-                                        id='departure-delay-input',
-                                        type='number',
-                                        value=0,
-                                        min=0,
-                                        style={'fontSize': '13px', 'width': '100%'}
-                                    )
-                                ], width=4),
-                                dbc.Col([
-                                    html.Label("Arrival Delay (minutes)", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                    dcc.Input(
-                                        id='arrival-delay-input',
-                                        type='number',
-                                        value=0,
-                                        min=0,
-                                        style={'fontSize': '13px', 'width': '100%'}
-                                    )
-                                ], width=4)
-                            ], className="mb-3", align='center')
-                        ], className="mb-4"),
-                        
-                        # Service Quality Section (abbreviated for brevity)
-                        html.Div([
-                            html.H6("Service Quality Rating", style={'color': '#1a237e', 'marginBottom': '15px', 'fontSize': '16px'}),
-                            html.Div([
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.Label("Inflight wifi service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='wifi-service-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=4,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Departure/Arrival time convenient", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='time-convenient-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=3,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Ease of Online booking", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='online-booking-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=4,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Gate location", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='gate-location-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=2,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3)
-                                ], className="mb-3"),
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.Label("Food and drink", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='food-drink-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=1,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Online boarding", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='online-boarding-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=2,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Seat comfort", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='seat-comfort-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=1,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Inflight entertainment", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='entertainment-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=0,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3)
-                                ], className="mb-3"),
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.Label("On-board service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='onboard-service-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=2,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Leg room service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='leg-room-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=1,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Baggage handling", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='baggage-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=1,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Checkin service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='checkin-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=2,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3)
-                                ], className="mb-3"),
-                                dbc.Row([
-                                    dbc.Col([
-                                        html.Label("Inflight service", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='inflight-service-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=1,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3),
-                                    dbc.Col([
-                                        html.Label("Cleanliness", style={'fontSize': '13px', 'fontWeight': 'bold'}),
-                                        dcc.Slider(
-                                            id='cleanliness-slider',
-                                            min=0,
-                                            max=5,
-                                            step=1,
-                                            value=1,
-                                            marks={i: str(i) for i in range(6)},
-                                            tooltip={"placement": "bottom", "always_visible": False}
-                                        )
-                                    ], width=3)
-                                ], className="mb-3")
-                            ])
-                        ], className="mb-4"),
-                        
-                        # Predict Button and Result
-                        html.Div([
-                            dbc.Button(
-                                "Predict Satisfaction",
-                                id="predict-button",
-                                className="mb-3",
-                                style={'width': '100%', 'backgroundColor': '#1a237e', 'borderColor': '#1a237e'}
-                            ),
-                            html.Div(
-                                id="prediction-result",
-                                style={
-                                    'textAlign': 'center',
-                                    'fontSize': '20px',
-                                    'fontWeight': 'bold',
-                                    'marginTop': '10px'
-                                }
-                            )
-                        ])
-                    ], style={'padding': '20px'})
+                        html.Label("Analysis Type:", style={'fontWeight': 'bold', 'fontSize': '12px'}),
+                        dcc.Dropdown(
+                            id='clustering-chart-selector',
+                            options=[
+                                {'label': 'Passenger Segments (PCA)', 'value': 'pca_scatter'},
+                                {'label': 'Segment Comparison', 'value': 'cluster_comparison'},
+                                {'label': 'Service Profiles', 'value': 'cluster_profiles'}
+                            ],
+                            value='pca_scatter',
+                            clearable=False,
+                            style={'fontSize': '12px', 'marginBottom': '10px'}
+                        )
+                    ], style={'marginBottom': '15px'}),
+                    
+                    # Clustering chart area
+                    dcc.Graph(
+                        id='clustering-chart',
+                        style={'height': '280px', 'marginBottom': '15px'},
+                        config={'displayModeBar': False}
+                    ),
                 ], className="module-container", style={
                     'width': '47%', 
                     'height': '50vh',

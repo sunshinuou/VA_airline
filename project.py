@@ -5,11 +5,13 @@ from dash import dcc, html, Input, Output, callback
 import dash_bootstrap_components as dbc
 
 from layout import create_compact_layout
+from preprocess import preprocess_airline_data
 from modules.RaderChart import create_radar_chart
 from modules.ParallelCoordinates import create_parallel_coordinates
 from modules.Distribution import create_distribution_chart
 from modules.ParallelCoordinates import create_parallel_coordinates, create_parallel_categories_chart
 from modules.ServiceFactor import create_service_factors_chart, generate_subgroup_info_header
+from modules.clustering import PassengerSegmentationAnalyzer
 
 def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgroup=None):
     """
@@ -51,8 +53,6 @@ def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgrou
                      style={'fontSize': '12px', 'color': '#2196f3'})
         ])
     ])
-from preprocess import preprocess_airline_data
-from modules.mlPredictor import ml
 
 def load_and_validate_data(file_path):
     """
@@ -72,6 +72,12 @@ def create_dash_app(df, service_attributes):
     Create comprehensive Dash application with error handling
     """
     app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    
+    # Initialize clustering analyzer (global for callbacks)
+    global clustering_analyzer
+    clustering_analyzer = PassengerSegmentationAnalyzer(df, service_attributes)
+    clustering_analyzer.perform_kmeans_clustering()
+    clustering_analyzer.perform_pca_analysis()
     
     # Prepare dropdown options based on available columns
     subgroup_options = []
@@ -103,27 +109,41 @@ def create_dash_app(df, service_attributes):
     # Set the compact layout with proper options
     app.layout = create_compact_layout(subgroup_options, None, pc_dimension_options)
     
-    # Store the prediction function and accuracy in app.server
-    accuracy, predict_func = ml(df, service_attributes)
-    app.server.predict_func = predict_func
-    app.server.prediction_accuracy = accuracy
+    # Callback for clustering chart updates
+    @app.callback(
+        Output('clustering-chart', 'figure'),
+        [Input('clustering-chart-selector', 'value'),
+         Input('sample-dropdown', 'value')]
+    )
+    def update_clustering_analysis(chart_type, sample_size):
+        # Apply sampling if requested
+        if sample_size > 0 and len(df) > sample_size:
+            sampled_df = df.sample(n=sample_size, random_state=42)
+            # Recreate analyzer with sampled data
+            temp_analyzer = PassengerSegmentationAnalyzer(sampled_df, service_attributes)
+            temp_analyzer.perform_kmeans_clustering()
+            temp_analyzer.perform_pca_analysis()
+        else:
+            temp_analyzer = clustering_analyzer
+        # Create chart based on selection
+        chart_fig = temp_analyzer.create_cluster_visualization(chart_type)
+        return chart_fig
     
-    # Callback to populate service factors subgroup dropdown based on dataset overview selection
+    # Callback to populate service factors subgroup dropdown based on Service Factor Rankings group by
     @app.callback(
         [Output('service-factors-subgroup-dropdown', 'options'),
          Output('service-factors-subgroup-dropdown', 'value')],
-        [Input('subgroup-dropdown-distribution', 'value')]
+        [Input('service-factors-group-dropdown', 'value')]
     )
     def update_service_factors_subgroup_options(selected_subgroup_type):
         if selected_subgroup_type and selected_subgroup_type in df.columns:
-            # Get unique values for the selected subgroup type
             unique_values = sorted(df[selected_subgroup_type].unique())
             options = [{'label': val, 'value': val} for val in unique_values]
             default_value = unique_values[0] if unique_values else None
             return options, default_value
         else:
             return [], None
-    
+
     # One-way sync: Dataset Overview → Radar Chart (only when Dataset Overview changes)
     @app.callback(
         Output('subgroup-dropdown', 'value'),
@@ -145,149 +165,51 @@ def create_dash_app(df, service_attributes):
          Input('subgroup-dropdown', 'value'),               # Radar Chart (independent)
          Input('sample-dropdown', 'value'),
          Input('pc-dimensions-dropdown', 'value'),
+         Input('service-factors-group-dropdown', 'value'),
          Input('service-factors-subgroup-dropdown', 'value')]
     )
-    def update_charts(dataset_subgroup, radar_subgroup, sample_size, selected_dimensions, selected_specific_subgroup):
-        # Apply sampling to the entire dataset
+    def update_charts(dataset_subgroup, radar_subgroup, sample_size, selected_dimensions, service_factors_group_col, selected_specific_subgroup):
         if sample_size > 0 and len(df) > sample_size:
             sampled_df = df.sample(n=sample_size, random_state=42)
         else:
             sampled_df = df.copy()
-        
-        # Dataset Overview and Distribution Chart use dataset_subgroup
+
         distribution_fig = create_distribution_chart(sampled_df, group_col=dataset_subgroup)
-        
-        # Radar Chart uses its own independent selection (radar_subgroup)
         radar_fig = create_radar_chart(sampled_df, service_attributes, radar_subgroup)
-        
-        # Update parallel categories with sampled data and selected dimensions
         parallel_fig = create_parallel_categories_chart(sampled_df, selected_dimensions, sample_size)
         
-        # Generate summary statistics - Keep 3 metrics (Passengers, Satisfaction, Avg Service)
         total_passengers = len(sampled_df)
         summary_items = html.Div([
-            # Total Passengers
             html.Div([
                 html.H4(f"{total_passengers:,}", style={'color': '#d32f2f', 'margin': '0', 'fontSize': '20px'}),
                 html.P("Total Passengers", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
-            # Satisfaction Rate
             html.Div([
                 html.H4(f"{(sampled_df['satisfaction'] == 'satisfied').mean() * 100:.1f}%", 
                        style={'color': '#4caf50', 'margin': '0', 'fontSize': '20px'}),
                 html.P("Satisfaction Rate", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
-            # Avg Service Score
             html.Div([
                 html.H4(f"{sampled_df['Service_Quality_Score'].mean():.2f}/5.0", 
                        style={'color': '#2196f3', 'margin': '0', 'fontSize': '20px'}),
                 html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'})
         ], style={'display': 'flex', 'justifyContent': 'space-between', 'minHeight': '80px', 'marginBottom': '6px'})
-        
-        # Service Factor Rankings uses dataset_subgroup (controlled by Dataset Overview)
+        # Service Factor Rankings
         service_factors_fig = create_service_factors_chart(
             sampled_df, 
             service_attributes, 
-            group_col=dataset_subgroup,
+            group_col=service_factors_group_col,
             selected_subgroup=selected_specific_subgroup,
-            chart_type='rf_importance'  # Always use RF Impact
+            chart_type='rf_importance'
         )
-        
-        # Generate subgroup info header (only 2 metrics: Satisfaction, Avg Service)
         subgroup_info = generate_subgroup_info_header_simple(
             sampled_df, 
-            group_col=dataset_subgroup,
+            group_col=service_factors_group_col,
             selected_subgroup=selected_specific_subgroup
         )
-        
         return (radar_fig, parallel_fig, summary_items, distribution_fig, 
                 service_factors_fig, subgroup_info)
-    
-    @app.callback(
-        Output('prediction-result', 'children'),
-        [Input('predict-button', 'n_clicks')],
-        [dash.State('gender-dropdown', 'value'),
-         dash.State('age-input', 'value'),
-         dash.State('customer-type-dropdown', 'value'),
-         dash.State('travel-type-dropdown', 'value'),
-         dash.State('class-dropdown', 'value'),
-         dash.State('flight-distance-input', 'value'),
-         dash.State('departure-delay-input', 'value'),
-         dash.State('arrival-delay-input', 'value'),
-         dash.State('wifi-service-slider', 'value'),
-         dash.State('time-convenient-slider', 'value'),
-         dash.State('online-booking-slider', 'value'),
-         dash.State('gate-location-slider', 'value'),
-         dash.State('food-drink-slider', 'value'),
-         dash.State('online-boarding-slider', 'value'),
-         dash.State('seat-comfort-slider', 'value'),
-         dash.State('entertainment-slider', 'value'),
-         dash.State('onboard-service-slider', 'value'),
-         dash.State('leg-room-slider', 'value'),
-         dash.State('baggage-slider', 'value'),
-         dash.State('checkin-slider', 'value'),
-         dash.State('inflight-service-slider', 'value'),
-         dash.State('cleanliness-slider', 'value')]
-    )
-    def update_prediction(n_clicks, gender, age, customer_type, travel_type, class_type,
-                         flight_distance, departure_delay, arrival_delay,
-                         wifi_service, time_convenient, online_booking, gate_location,
-                         food_drink, online_boarding, seat_comfort, entertainment,
-                         onboard_service, leg_room, baggage, checkin,
-                         inflight_service, cleanliness):
-        if n_clicks is None:
-            return ""
-        
-        # Create passenger info dictionary
-        passenger_info = {
-            'Gender': gender,
-            'Age': age,
-            'Customer Type': customer_type,
-            'Type of Travel': travel_type,
-            'Class': class_type,
-            'Flight Distance': flight_distance,
-            'Departure Delay in Minutes': departure_delay,
-            'Arrival Delay in Minutes': arrival_delay,
-            'Inflight wifi service': wifi_service,
-            'Departure/Arrival time convenient': time_convenient,
-            'Ease of Online booking': online_booking,
-            'Gate location': gate_location,
-            'Food and drink': food_drink,
-            'Online boarding': online_boarding,
-            'Seat comfort': seat_comfort,
-            'Inflight entertainment': entertainment,
-            'On-board service': onboard_service,
-            'Leg room service': leg_room,
-            'Baggage handling': baggage,
-            'Checkin service': checkin,
-            'Inflight service': inflight_service,
-            'Cleanliness': cleanliness
-        }
-        
-        # Get prediction
-        prediction = app.server.predict_func(passenger_info)
-        accuracy = app.server.prediction_accuracy
-        
-        # Return formatted result
-        return dbc.Row([
-            dbc.Col([
-                html.H4("Prediction Result:", style={'marginBottom': '10px', 'fontSize': '18px'}),
-                html.H3(prediction, style={
-                    'color': '#4caf50' if prediction == 'Satisfied' else '#f44336',
-                    'fontWeight': 'bold',
-                    'fontSize': '22px'
-                })
-            ], width=7),
-            dbc.Col([
-                html.H4("Prediction Accuracy:", style={'marginBottom': '10px', 'fontSize': '16px'}),
-                html.H3(f"{accuracy*100:.2f}%", style={
-                    'color': '#1a237e',
-                    'fontWeight': 'bold',
-                    'fontSize': '20px'
-                })
-            ], width=5, style={'textAlign': 'right', 'display': 'flex', 'flexDirection': 'column', 'justifyContent': 'center'})
-        ], align='center')
     
     return app
 
@@ -312,38 +234,6 @@ def main():
         print("Failed to preprocess data.")
         return
     
-    # machine learning model training and prediction
-    accuracy, predict_func = ml(df_processed, service_attributes)
-    print(f"\nXGBoost model accuracy on test set: {accuracy:.4f}")
-    
-    # example passenger info
-    sample_passenger = {
-        'Gender': 'Male',
-        'Age': 35,
-        'Customer Type': 'Loyal Customer',
-        'Type of Travel': 'Business travel',
-        'Class': 'Business',
-        'Flight Distance': 1000,
-        'Departure Delay in Minutes': 10,
-        'Arrival Delay in Minutes': 3,
-        'Inflight wifi service': 4,
-        'Departure/Arrival time convenient': 3,
-        'Ease of Online booking': 4,
-        'Gate location': 2,
-        'Food and drink': 1,
-        'Online boarding': 2,
-        'Seat comfort': 1,
-        'Inflight entertainment': 0,
-        'On-board service': 2,
-        'Leg room service': 1,
-        'Baggage handling':1,
-        'Checkin service': 2,
-        'Inflight service': 1,
-        'Cleanliness': 1
-    }
-    pred = predict_func(sample_passenger)
-    print(f"Prediction for sample passenger: {pred}")
-
     # Create and run the Dash app
     app = create_dash_app(df_processed, service_attributes)
     
