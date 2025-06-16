@@ -23,24 +23,10 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
         # Header
         dbc.Row([
             dbc.Col([
-                html.H1("Airline Passenger Satisfaction Dashboard", 
-                       className="text-center mb-3",
-                       style={'color': '#1a237e', 'fontWeight': 'bold'}),
-                html.Hr()
-            ])
-        ]),
-        
-        # Two-row grid layout
-        html.Div([
-            # Row 1: Dataset Overview + Service Factor Rankings + Predictive Analysis
-            html.Div([
-                # Left: Dataset Overview
                 html.Div([
-                    # Title and Sample Size in header
                     html.Div([
-                        html.H5("Dataset Overview", className="mb-2", style={'color': '#1a237e', 'display': 'inline-block', 'marginBottom': 0}),
                         html.Div([
-                            html.Label("Sample Size", style={'fontWeight': 'bold', 'fontSize': '12px', 'display': 'inline-block', 'marginRight': '5px', 'marginBottom': 0}),
+                            html.Label("Sample Size", style={'fontWeight': 'bold', 'fontSize': '12px', 'display': 'inline-block', 'marginRight': '5px', 'verticalAlign': 'middle'}),
                             dcc.Dropdown(
                                 id='sample-dropdown',
                                 options=[
@@ -56,10 +42,27 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                                     'display': 'inline-block',
                                     'height': '30px',
                                     'minHeight': '30px',
-                                    'marginBottom': 0
+                                    'verticalAlign': 'middle'
                                 }
                             )
-                        ], style={'float': 'right', 'marginTop': '5px', 'marginBottom': 0})
+                        ], style={'display': 'inline-block', 'verticalAlign': 'middle', 'float': 'left', 'marginTop': '15px'}),
+                        html.H1("Airline Passenger Satisfaction Dashboard", 
+                               style={'color': '#1a237e', 'fontWeight': 'bold', 'display': 'inline-block', 'margin': '0', 'position': 'absolute', 'left': '50%', 'transform': 'translateX(-50%)'})
+                    ], style={'position': 'relative', 'height': '60px', 'marginBottom': '10px'}),
+                ]),
+                html.Hr()
+            ])
+        ]),
+        
+        # Two-row grid layout
+        html.Div([
+            # Row 1: Dataset Overview + Service Quality Radar + Service Factor Rankings
+            html.Div([
+                # Left: Dataset Overview
+                html.Div([
+                    # Title and Sample Size in header
+                    html.Div([
+                        html.H5("Dataset Overview", className="mb-2", style={'color': '#1a237e', 'display': 'inline-block', 'marginBottom': 0})
                     ], style={'marginBottom': '8px'}),
                     
                     # Summary stats (3 metrics) - Keep Passengers, Satisfaction, Avg Service
@@ -131,13 +134,103 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                     'flexDirection': 'column'
                 }),
                 
-                # Middle: Service Factor Rankings Block
+                # Middle: Service Quality Radar
+                html.Div([
+                    # Title and dropdown area at top
+                    html.Div([
+                        html.H5("Service Quality Radar", 
+                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left'}),
+                        html.Div([
+                            html.Label("Group by:", 
+                                     style={
+                                         'fontWeight': 'bold', 
+                                         'marginBottom': '5px',
+                                         'display': 'block',
+                                         'color': '#1a237e',
+                                         'fontSize': '14px'
+                                     }),
+                            dcc.Dropdown(
+                                id='subgroup-dropdown',
+                                options=subgroup_options,
+                                value=subgroup_options[0]['value'] if subgroup_options else None,
+                                clearable=False,
+                                style={
+                                    'fontSize': '13px'
+                                },
+                                optionHeight=40,
+                                maxHeight=200
+                            )
+                        ], style={
+                            'marginBottom': '15px',
+                            'position': 'relative',
+                            'zIndex': '1000'
+                        })
+                    ]),
+                    # Radar Chart area
+                    html.Div([
+                        dcc.Graph(
+                            id='radar-chart', 
+                            style={
+                                'height': '380px',
+                                'width': '100%'
+                            },
+                            config={
+                                'displayModeBar': False
+                            }
+                        )
+                    ], style={
+                        'height': '380px',
+                        'flex': '1'
+                    })
+                ], className="module-container", style={
+                    'width': '32%',
+                    'height': '60vh',
+                    'float': 'left',
+                    'margin': '0 1.5% 1.5% 0',
+                    'padding': '15px',
+                    'backgroundColor': '#fff',
+                    'border': '1px solid #ddd',
+                    'borderRadius': '8px',
+                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                    'display': 'flex',
+                    'flexDirection': 'column'
+                }),
+                
+                # Right: Service Factor Rankings Block
                 html.Div([
                     # Title
                     html.Div([
                         html.H5("Service Factor Rankings (Random Forest Impact)", 
-                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'center'})
+                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left'})
                     ]),
+                    
+                    # Add group by dropdown for Service Factor Rankings
+                    html.Div([
+                        html.Label("Group by:", 
+                                 style={
+                                     'fontWeight': 'bold', 
+                                     'marginBottom': '5px',
+                                     'display': 'block',
+                                     'color': '#1a237e',
+                                     'fontSize': '14px'
+                                 }),
+                        dcc.Dropdown(
+                            id='service-factors-group-dropdown',
+                            options=subgroup_options,
+                            value=subgroup_options[0]['value'] if subgroup_options else None,
+                            clearable=False,
+                            style={
+                                'fontSize': '13px',
+                                'marginBottom': '10px'
+                            },
+                            optionHeight=40,
+                            maxHeight=200
+                        )
+                    ], style={
+                        'marginBottom': '15px',
+                        'position': 'relative',
+                        'zIndex': '1000'
+                    }),
                     
                     # Add subgroup dropdown to choose specific subgroup
                     html.Div([
@@ -175,12 +268,11 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                             'displayModeBar': False
                         }
                     )
-                    # Remove the insights text section completely
                 ], className="module-container", style={
-                    'width': '32%',
+                    'width': '35%',
                     'height': '60vh',
-                    'float': 'left',
-                    'margin': '0 1.5% 1.5% 0',
+                    'float': 'right',
+                    'margin': '0 0 1.5% 0',
                     'padding': '15px',
                     'backgroundColor': '#fff',
                     'border': '1px solid #ddd',
@@ -188,8 +280,39 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                     'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
                     'display': 'flex',
                     'flexDirection': 'column'
+                })
+            ], style={'overflow': 'hidden'}),
+            
+            # Row 2: Parallel Categories + Predictive Analysis
+            html.Div([
+                # Left: Parallel Categories
+                html.Div([
+                    html.H5("Parallel Categories", className="mb-3", style={'color': '#1a237e'}),
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("Select Category Flow (max 6):", style={'fontWeight': 'bold'}),
+                            dcc.Dropdown(
+                                id='pc-dimensions-dropdown',
+                                options=pc_dimension_options,
+                                value=['Customer Type', 'Class', 'Type of Travel', 'Satisfaction'],
+                                multi=True,
+                                clearable=False,
+                                maxHeight=200
+                            )
+                        ], width=12)
+                    ], className="mb-2"),
+                    dcc.Graph(id='parallel-coords', style={'height': '300px', 'width': '100%'})
+                ], className="module-container", style={
+                    'width': '50%', 
+                    'height': '50vh',
+                    'float': 'left',
+                    'margin': '0 1.5% 0 0', 
+                    'padding': '15px',
+                    'backgroundColor': '#fff', 
+                    'border': '1px solid #ddd',
+                    'borderRadius': '8px', 
+                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'
                 }),
-                
                 # Right: Predictive Analysis
                 html.Div([
                     html.H5("Predictive Analysis", className="mb-3", style={'color': '#1a237e'}),
@@ -503,99 +626,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                         ])
                     ], style={'padding': '20px'})
                 ], className="module-container", style={
-                    'width': '35%', 'height': '60vh', 'float': 'right',
-                    'margin': '0 0 1.5% 0', 'padding': '15px',
-                    'backgroundColor': '#fff', 'border': '1px solid #ddd',
-                    'borderRadius': '8px', 'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                    'overflowY': 'auto'
-                })
-            ], style={'overflow': 'hidden'}),
-            
-            # Row 2: Radar Chart + Parallel Coordinates
-            html.Div([
-                # Left: Radar Chart with dropdown at top
-                html.Div([
-                    # Title and dropdown area at top
-                    html.Div([
-                        html.H5("Service Quality Radar", 
-                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left'}),
-                        html.Div([
-                            html.Label("Group by:", 
-                                     style={
-                                         'fontWeight': 'bold', 
-                                         'marginBottom': '5px',
-                                         'display': 'block',
-                                         'color': '#1a237e',
-                                         'fontSize': '14px'
-                                     }),
-                            dcc.Dropdown(
-                                id='subgroup-dropdown',
-                                options=subgroup_options,
-                                value=subgroup_options[0]['value'] if subgroup_options else None,
-                                clearable=False,
-                                style={
-                                    'fontSize': '13px'
-                                },
-                                optionHeight=40,
-                                maxHeight=200
-                            )
-                        ], style={
-                            'marginBottom': '15px',
-                            'position': 'relative',
-                            'zIndex': '1000'
-                        })
-                    ]),
-                    # Radar Chart area
-                    html.Div([
-                        dcc.Graph(
-                            id='radar-chart', 
-                            style={
-                                'height': '380px',
-                                'width': '100%'
-                            },
-                            config={
-                                'displayModeBar': False
-                            }
-                        )
-                    ], style={
-                        'height': '380px',
-                        'flex': '1'
-                    })
-                ], className="module-container", style={
-                    'width': '30%', 
-                    'height': '50vh',
-                    'float': 'left',
-                    'margin': '0 1.5% 0 0', 
-                    'padding': '15px',
-                    'backgroundColor': '#fff', 
-                    'border': '1px solid #ddd',
-                    'borderRadius': '8px', 
-                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
-                    'overflow': 'visible',
-                    'position': 'relative',
-                    'zIndex': '100',
-                    'display': 'flex',
-                    'flexDirection': 'column'
-                }),
-                # Right: Parallel Categories
-                html.Div([
-                    html.H5("Parallel Categories", className="mb-3", style={'color': '#1a237e'}),
-                    dbc.Row([
-                        dbc.Col([
-                            html.Label("Select Category Flow (max 6):", style={'fontWeight': 'bold'}),
-                            dcc.Dropdown(
-                                id='pc-dimensions-dropdown',
-                                options=pc_dimension_options,
-                                value=['Customer Type', 'Class', 'Type of Travel', 'Satisfaction'],
-                                multi=True,
-                                clearable=False,
-                                maxHeight=200
-                            )
-                        ], width=12)
-                    ], className="mb-2"),
-                    dcc.Graph(id='parallel-coords', style={'height': '300px'})
-                ], className="module-container", style={
-                    'width': '67%', 
+                    'width': '47%', 
                     'height': '50vh',
                     'float': 'right',
                     'margin': '0', 
@@ -603,7 +634,8 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                     'backgroundColor': '#fff', 
                     'border': '1px solid #ddd',
                     'borderRadius': '8px', 
-                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'
+                    'boxShadow': '0 2px 4px rgba(0,0,0,0.1)',
+                    'overflowY': 'auto'
                 })
             ], style={'overflow': 'hidden'})
         ])
