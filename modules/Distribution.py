@@ -2,6 +2,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
+from utils import get_display_value
 
 def create_distribution_chart(df, group_col='Class'):
     """
@@ -24,41 +25,57 @@ def create_distribution_chart(df, group_col='Class'):
         )
         return fig
     
-    # Get distribution counts
-    distribution = df[group_col].value_counts()
+    # Get distribution counts - preserve categorical order
+    if pd.api.types.is_categorical_dtype(df[group_col]):
+        # For categorical data, use the categories in their defined order
+        categories = df[group_col].cat.categories
+        distribution = df[group_col].value_counts().reindex(categories)
+    else:
+        # For non-categorical data, use natural order (don't sort alphabetically)
+        distribution = df[group_col].value_counts(sort=False)
+    
+    # Map labels for display
+    display_labels = [get_display_value(val) for val in distribution.index]
+    
+    # Get colors from the same palette as radar chart and make them more transparent
+    base_colors = px.colors.qualitative.Set1[:len(distribution)]
+    colors = [c.replace('rgb', 'rgba').replace(')', ',0.7)') for c in base_colors]
     
     # Create pie chart
     fig = go.Figure(data=[go.Pie(
-        labels=distribution.index,
+        labels=display_labels,
         values=distribution.values,
         hole=0.4,  # Creates a donut chart
-        textinfo='label+percent',
+        textinfo='percent',  # Only show percent
         textposition='outside',
         marker=dict(
-            colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'],
+            colors=colors,
             line=dict(color='#FFFFFF', width=2)
-        )
+        ),
+        sort=False
     )])
     
     fig.update_layout(
         title={
-            'text': f"{group_col} Distribution",
+            'text': 'Distribution',
             'x': 0.5,
             'xanchor': 'center',
-            'font': {'size': 16, 'color': '#1a237e', 'family': 'Arial, sans-serif'}
+            'font': {'size': 22, 'color': '#1a237e', 'family': 'Arial, sans-serif'}
         },
-        height=280,
-        margin=dict(t=40, b=20, l=20, r=20),
-        font=dict(size=12),
+        height=400,
+        margin=dict(t=40, b=80, l=20, r=20),
+        font=dict(size=20),
         showlegend=True,
         legend=dict(
-            orientation="v",
-            yanchor="middle",
-            y=0.5,
-            xanchor="left",
-            x=1.05
+            orientation="h",
+            font=dict(size=20),
+            x=0.5,
+            y=-0.1,
+            xanchor='center',
+            yanchor='top'
         )
     )
+    fig.update_traces(textfont_size=16, marker=dict(line=dict(width=3)))
     
     return fig
 

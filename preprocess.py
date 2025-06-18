@@ -44,9 +44,11 @@ def preprocess_airline_data(df):
     
     # Create age groups for better analysis
     if 'Age' in df_processed.columns:
+        age_labels = ['Young (≤25)', 'Adult (26-40)', 'Middle-aged (41-60)', 'Senior (>60)']
         df_processed['Age_Group'] = pd.cut(df_processed['Age'], 
                                          bins=[0, 25, 40, 60, 100], 
-                                         labels=['Young (≤25)', 'Adult (26-40)', 'Middle-aged (41-60)', 'Senior (>60)'])
+                                         labels=age_labels)
+        df_processed['Age_Group'] = pd.Categorical(df_processed['Age_Group'], categories=age_labels, ordered=True)
     
     # Create delay categories
     if 'Departure Delay in Minutes' in df_processed.columns:

@@ -11,7 +11,8 @@ from modules.ParallelCoordinates import create_parallel_coordinates
 from modules.Distribution import create_distribution_chart
 from modules.ParallelCoordinates import create_parallel_coordinates, create_parallel_categories_chart
 from modules.ServiceFactor import create_service_factors_chart, generate_subgroup_info_header
-from modules.clustering import PassengerSegmentationAnalyzer
+from modules.clustering import CustomerSegmentationAnalyzer
+from utils import get_display_name
 
 def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgroup=None):
     """
@@ -20,7 +21,11 @@ def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgrou
     if group_col not in df.columns:
         return html.Div("No subgroup data available", style={'color': '#666'})
     
-    groups = sorted(df[group_col].unique())
+    # Preserve categorical order if available
+    if pd.api.types.is_categorical_dtype(df[group_col]):
+        groups = df[group_col].cat.categories.tolist()
+    else:
+        groups = df[group_col].unique().tolist()
     
     if selected_subgroup is None or selected_subgroup not in groups:
         selected_subgroup = groups[0] if groups else None
@@ -45,12 +50,12 @@ def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgrou
     
     return html.Div([
         html.H6(f"Analysis for {selected_subgroup}", 
-               style={'color': '#1a237e', 'marginBottom': '8px', 'fontWeight': 'bold'}),
+               style={'color': '#1a237e', 'marginBottom': '8px', 'fontWeight': 'bold', 'fontSize': '22px'}),
         html.Div([
             html.Span(f"Satisfaction: {satisfaction_rate:.1f}%", 
-                     style={'marginRight': '20px', 'fontSize': '12px', 'color': '#4caf50'}),
+                     style={'marginRight': '20px', 'fontSize': '20px', 'color': '#4caf50'}),
             html.Span(f"Avg Service: {service_score:.2f}/5.0", 
-                     style={'fontSize': '12px', 'color': '#2196f3'})
+                     style={'fontSize': '20px', 'color': '#2196f3'})
         ])
     ])
 
@@ -75,7 +80,7 @@ def create_dash_app(df, service_attributes):
     
     # Initialize clustering analyzer (global for callbacks)
     global clustering_analyzer
-    clustering_analyzer = PassengerSegmentationAnalyzer(df, service_attributes)
+    clustering_analyzer = CustomerSegmentationAnalyzer(df, service_attributes)
     clustering_analyzer.perform_kmeans_clustering()
     clustering_analyzer.perform_pca_analysis()
     
@@ -120,7 +125,7 @@ def create_dash_app(df, service_attributes):
         if sample_size > 0 and len(df) > sample_size:
             sampled_df = df.sample(n=sample_size, random_state=42)
             # Recreate analyzer with sampled data
-            temp_analyzer = PassengerSegmentationAnalyzer(sampled_df, service_attributes)
+            temp_analyzer = CustomerSegmentationAnalyzer(sampled_df, service_attributes)
             temp_analyzer.perform_kmeans_clustering()
             temp_analyzer.perform_pca_analysis()
         else:
@@ -129,30 +134,25 @@ def create_dash_app(df, service_attributes):
         chart_fig = temp_analyzer.create_cluster_visualization(chart_type)
         return chart_fig
     
-    # Callback to populate service factors subgroup dropdown based on Service Factor Rankings group by
+    # Callback to populate service factors subgroup dropdown based on Dataset Overview group by
     @app.callback(
         [Output('service-factors-subgroup-dropdown', 'options'),
          Output('service-factors-subgroup-dropdown', 'value')],
-        [Input('service-factors-group-dropdown', 'value')]
+        [Input('subgroup-dropdown-distribution', 'value')]
     )
-    def update_service_factors_subgroup_options(selected_subgroup_type):
-        if selected_subgroup_type and selected_subgroup_type in df.columns:
-            unique_values = sorted(df[selected_subgroup_type].unique())
+    def update_service_factors_subgroup_options(selected_group_col):
+        if selected_group_col and selected_group_col in df.columns:
+            # Preserve categorical order if available
+            if pd.api.types.is_categorical_dtype(df[selected_group_col]):
+                unique_values = df[selected_group_col].cat.categories.tolist()
+            else:
+                unique_values = df[selected_group_col].unique().tolist()
             options = [{'label': val, 'value': val} for val in unique_values]
             default_value = unique_values[0] if unique_values else None
             return options, default_value
         else:
             return [], None
 
-    # One-way sync: Dataset Overview → Radar Chart (only when Dataset Overview changes)
-    @app.callback(
-        Output('subgroup-dropdown', 'value'),
-        [Input('subgroup-dropdown-distribution', 'value')],
-        prevent_initial_call=True
-    )
-    def sync_radar_from_dataset(dist_group_col):
-        return dist_group_col
-    
     # Main callback for all charts - responds to both dropdowns independently
     @app.callback(
         [Output('radar-chart', 'figure'),
@@ -162,50 +162,53 @@ def create_dash_app(df, service_attributes):
          Output('service-factors-chart', 'figure'),
          Output('subgroup-info-header', 'children')],
         [Input('subgroup-dropdown-distribution', 'value'),  # Dataset Overview
-         Input('subgroup-dropdown', 'value'),               # Radar Chart (independent)
          Input('sample-dropdown', 'value'),
          Input('pc-dimensions-dropdown', 'value'),
-         Input('service-factors-group-dropdown', 'value'),
+         Input('service-factors-subgroup-dropdown', 'options'),
          Input('service-factors-subgroup-dropdown', 'value')]
     )
-    def update_charts(dataset_subgroup, radar_subgroup, sample_size, selected_dimensions, service_factors_group_col, selected_specific_subgroup):
+    def update_charts(dataset_subgroup, sample_size, selected_dimensions, subgroup_options, selected_specific_subgroup):
         if sample_size > 0 and len(df) > sample_size:
             sampled_df = df.sample(n=sample_size, random_state=42)
         else:
             sampled_df = df.copy()
 
+        if (not selected_specific_subgroup) and subgroup_options:
+            selected_specific_subgroup = subgroup_options[0]['value']
+
         distribution_fig = create_distribution_chart(sampled_df, group_col=dataset_subgroup)
-        radar_fig = create_radar_chart(sampled_df, service_attributes, radar_subgroup)
+        radar_fig = create_radar_chart(sampled_df, service_attributes, dataset_subgroup)
         parallel_fig = create_parallel_categories_chart(sampled_df, selected_dimensions, sample_size)
         
         total_passengers = len(sampled_df)
         summary_items = html.Div([
             html.Div([
                 html.H4(f"{total_passengers:,}", style={'color': '#d32f2f', 'margin': '0', 'fontSize': '20px'}),
-                html.P("Total Passengers", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
+                html.P("Total Passengers", style={'color': '#666', 'margin': '5px 0', 'fontSize': '20px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
             html.Div([
                 html.H4(f"{(sampled_df['satisfaction'] == 'satisfied').mean() * 100:.1f}%", 
                        style={'color': '#4caf50', 'margin': '0', 'fontSize': '20px'}),
-                html.P("Satisfaction Rate", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
+                html.P("Satisfaction Rate", style={'color': '#666', 'margin': '5px 0', 'fontSize': '20px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
             html.Div([
                 html.H4(f"{sampled_df['Service_Quality_Score'].mean():.2f}/5.0", 
                        style={'color': '#2196f3', 'margin': '0', 'fontSize': '20px'}),
-                html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
+                html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '20px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'})
         ], style={'display': 'flex', 'justifyContent': 'space-between', 'minHeight': '80px', 'marginBottom': '6px'})
+        
         # Service Factor Rankings
         service_factors_fig = create_service_factors_chart(
             sampled_df, 
             service_attributes, 
-            group_col=service_factors_group_col,
+            group_col=dataset_subgroup,
             selected_subgroup=selected_specific_subgroup,
             chart_type='rf_importance'
         )
         subgroup_info = generate_subgroup_info_header_simple(
             sampled_df, 
-            group_col=service_factors_group_col,
+            group_col=dataset_subgroup,
             selected_subgroup=selected_specific_subgroup
         )
         return (radar_fig, parallel_fig, summary_items, distribution_fig, 

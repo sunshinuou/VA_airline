@@ -11,9 +11,9 @@ from dash import html, dcc
 import warnings
 warnings.filterwarnings('ignore')
 
-class PassengerSegmentationAnalyzer:
+class CustomerSegmentationAnalyzer:
     """
-    Advanced clustering analysis for passenger segmentation
+    Advanced clustering analysis for customer segmentation
     """
     
     def __init__(self, df, service_attributes):
@@ -146,16 +146,6 @@ class PassengerSegmentationAnalyzer:
         pca = PCA(n_components=n_components)
         self.pca_components = pca.fit_transform(X_scaled)
         
-        # Store feature contributions to principal components
-        self.pca_feature_contributions = {}
-        for i in range(n_components):
-            component_contributions = dict(zip(self.service_attributes, pca.components_[i]))
-            # Sort by absolute contribution
-            sorted_contributions = sorted(component_contributions.items(), 
-                                       key=lambda x: abs(x[1]), 
-                                       reverse=True)
-            self.pca_feature_contributions[f'PC{i+1}'] = sorted_contributions
-        
         # Add PCA components to dataframe
         for i in range(n_components):
             self.df[f'PCA_{i+1}'] = self.pca_components[:, i]
@@ -254,34 +244,36 @@ class PassengerSegmentationAnalyzer:
                             '%{text}<extra></extra>'
             ))
         
-        # Get top features for each principal component
-        pc1_top_features = [f"{f[:20]}..." if len(f) > 20 else f for f, _ in self.pca_feature_contributions['PC1'][:3]]
-        pc2_top_features = [f"{f[:20]}..." if len(f) > 20 else f for f, _ in self.pca_feature_contributions['PC2'][:3]]
-        
-        pc1_title = f"First Principal Component<br><sub>Top features: {', '.join(pc1_top_features)}</sub>"
-        pc2_title = f"Second Principal Component<br><sub>Top features: {', '.join(pc2_top_features)}</sub>"
-        
         fig.update_layout(
-            title={
-                'text': 'Passenger Segments (PCA Visualization)',
-                'x': 0.5,
-                'xanchor': 'center',
-                'font': {'size': 16, 'color': '#1a237e'}
-            },
-            xaxis_title=pc1_title,
-            yaxis_title=pc2_title,
-            height=350,
+            xaxis_title='First Principal Component',
+            yaxis_title='Second Principal Component',
+            xaxis=dict(
+                title='First Principal Component',
+                titlefont=dict(size=20),
+                tickfont=dict(size=16)
+            ),
+            yaxis=dict(
+                title='Second Principal Component',
+                titlefont=dict(size=20),
+                tickfont=dict(size=16)
+            ),
+            height=400,
             margin=dict(l=20, r=20, t=50, b=20),
             legend=dict(
                 orientation="v",
                 yanchor="middle",
                 y=0.5,
                 xanchor="left",
-                x=1.02
+                x=1.02,
+                font=dict(size=20)
             ),
-            showlegend=True
+            showlegend=True,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
         )
-        
+        # 居中处理：设置xaxis和yaxis的automargin和zeroline
+        fig.update_xaxes(automargin=True, zeroline=False)
+        fig.update_yaxes(automargin=True, zeroline=False)
         return fig
     
     def create_cluster_profiles_chart(self):
@@ -335,7 +327,7 @@ class PassengerSegmentationAnalyzer:
                 'xanchor': 'center',
                 'font': {'size': 16, 'color': '#1a237e'}
             },
-            height=350,
+            height=400,
             margin=dict(l=20, r=20, t=50, b=20),
             legend=dict(x=0.02, y=0.98)
         )
@@ -394,7 +386,7 @@ class PassengerSegmentationAnalyzer:
                 'xanchor': 'center',
                 'font': {'size': 16, 'color': '#1a237e'}
             },
-            height=350,
+            height=400,
             margin=dict(l=20, r=20, t=50, b=20),
             legend=dict(x=0.02, y=0.98)
         )
@@ -409,7 +401,7 @@ class PassengerSegmentationAnalyzer:
             self.perform_kmeans_clustering()
         
         cluster_analysis = self.analyze_cluster_characteristics()
-        # n_clusters = len(cluster_analysis)  # 不再需要
+        n_clusters = len(cluster_analysis)
         
         insights = []
         
@@ -431,6 +423,45 @@ class PassengerSegmentationAnalyzer:
                      style={'color': quality_color, 'fontWeight': 'bold'})
         ], style={'margin': '5px 0', 'fontSize': '12px'}))
         
+        # Find best and worst performing clusters
+        best_cluster = max(cluster_analysis.items(), key=lambda x: x[1]['satisfaction_rate'])
+        worst_cluster = min(cluster_analysis.items(), key=lambda x: x[1]['satisfaction_rate'])
+        
+        insights.append(html.P([
+            html.Span("🏆 Highest Satisfaction: ", style={'fontWeight': 'bold'}),
+            f"Cluster {best_cluster[0]} ({best_cluster[1]['satisfaction_rate']:.1f}%)"
+        ], style={'margin': '5px 0', 'fontSize': '12px'}))
+        
+        insights.append(html.P([
+            html.Span("⚠️ Needs Attention: ", style={'fontWeight': 'bold'}),
+            f"Cluster {worst_cluster[0]} ({worst_cluster[1]['satisfaction_rate']:.1f}%)"
+        ], style={'margin': '5px 0', 'fontSize': '12px'}))
+        
+        # Cluster size distribution
+        largest_cluster = max(cluster_analysis.items(), key=lambda x: x[1]['size'])
+        smallest_cluster = min(cluster_analysis.items(), key=lambda x: x[1]['size'])
+        
+        insights.append(html.P([
+            html.Span("📊 Largest Segment: ", style={'fontWeight': 'bold'}),
+            f"Cluster {largest_cluster[0]} ({largest_cluster[1]['size_percentage']:.1f}% of customers)"
+        ], style={'margin': '5px 0', 'fontSize': '12px'}))
+        
+        # Strategic recommendations
+        if best_cluster[1]['satisfaction_rate'] - worst_cluster[1]['satisfaction_rate'] > 30:
+            recommendation = "High variation - focus on underperforming segments"
+            rec_color = "#ff6b6b"
+        elif n_clusters > 5:
+            recommendation = "Many segments - consider consolidation strategy"
+            rec_color = "#ff9800"
+        else:
+            recommendation = "Balanced segmentation - optimize each cluster"
+            rec_color = "#4caf50"
+        
+        insights.append(html.P([
+            html.Span("💡 Strategy: ", style={'fontWeight': 'bold'}),
+            html.Span(recommendation, style={'color': rec_color, 'fontWeight': 'bold'})
+        ], style={'margin': '5px 0', 'fontSize': '12px'}))
+        
         return html.Div(insights)
 
 def create_clustering_dashboard_component(df, service_attributes):
@@ -438,7 +469,7 @@ def create_clustering_dashboard_component(df, service_attributes):
     Create the complete clustering dashboard component for predictive analysis
     """
     # Initialize clustering analyzer
-    analyzer = PassengerSegmentationAnalyzer(df, service_attributes)
+    analyzer = CustomerSegmentationAnalyzer(df, service_attributes)
     
     # Perform clustering analysis
     analyzer.perform_kmeans_clustering()

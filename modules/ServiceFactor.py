@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from dash import html
 from plotly.subplots import make_subplots
+from utils import get_display_name
 
 def create_service_factors_chart(df, service_attributes, group_col='Class', selected_subgroup=None, chart_type='average'):
     """
@@ -17,8 +18,11 @@ def create_service_factors_chart(df, service_attributes, group_col='Class', sele
             showarrow=False, font=dict(size=14)
         )
     
-    # Get unique groups
-    groups = sorted(df[group_col].unique())
+    # Get unique groups - preserve categorical order
+    if pd.api.types.is_categorical_dtype(df[group_col]):
+        groups = df[group_col].cat.categories.tolist()
+    else:
+        groups = df[group_col].unique().tolist()
     
     # If no specific subgroup selected, use the first one
     if selected_subgroup is None or selected_subgroup not in groups:
@@ -60,9 +64,8 @@ def create_average_ratings_chart(subgroup_data, service_attributes, selected_sub
         if attr in subgroup_data.columns:
             avg_rating = subgroup_data[attr].mean()
             service_ratings.append(avg_rating)
-            
-            # Shorten long service names for better display
-            display_name = attr
+            # Use display name
+            display_name = get_display_name(attr)
             service_names.append(display_name)
     
     if not service_ratings:
@@ -178,7 +181,7 @@ def create_rf_importance_chart(subgroup_data, service_attributes, selected_subgr
         factors, importances = zip(*sorted_importance)
         
         # Truncate long factor names
-        display_factors = factors
+        display_factors = [get_display_name(f) for f in factors]
         
         # Create color scale based on importance
         colors = []
@@ -215,24 +218,29 @@ def create_rf_importance_chart(subgroup_data, service_attributes, selected_subgr
                 'text': f'RF Feature Importance - {selected_subgroup}  Accuracy: {accuracy:.1%}</sub>',
                 'x': 0.5,
                 'xanchor': 'center',
-                'font': {'size': 14, 'color': '#1a237e'}
+                'font': {'size': 20, 'color': '#1a237e'}
             },
             xaxis=dict(
                 title='Feature Importance',
                 range=[0, max(importances) * 1.15],
-                gridcolor='rgba(200,200,200,0.5)'
+                gridcolor='rgba(200,200,200,0.5)',
+                tickfont=dict(size=20),
+                titlefont=dict(size=20)
             ),
             yaxis=dict(
                 title='Service Factors',
                 automargin=True,
-                tickfont=dict(size=10)
+                tickfont=dict(size=20),
+                titlefont=dict(size=20)
             ),
-            height=350,
+            height=400,
             margin=dict(l=20, r=40, t=40, b=40),
             plot_bgcolor='rgba(240,240,240,0.1)',
             paper_bgcolor='rgba(0,0,0,0)',
-            showlegend=False
+            showlegend=False,
+            font=dict(size=20)
         )
+        fig.update_traces(textfont_size=20)
         
         return fig
         
@@ -249,51 +257,6 @@ def create_rf_importance_chart(subgroup_data, service_attributes, selected_subgr
             showarrow=False, font=dict(size=12)
         )
 
-def generate_subgroup_info_header(df, group_col='Class', selected_subgroup=None):
-    """
-    Generate header information for the selected subgroup
-    """
-    if group_col not in df.columns:
-        return html.Div("No subgroup data available", style={'color': '#666'})
-    
-    groups = sorted(df[group_col].unique())
-    
-    if selected_subgroup is None or selected_subgroup not in groups:
-        selected_subgroup = groups[0] if groups else None
-    
-    if selected_subgroup is None:
-        return html.Div("No subgroup selected", style={'color': '#666'})
-    
-    # Get subgroup data
-    subgroup_data = df[df[group_col] == selected_subgroup]
-    
-    if len(subgroup_data) == 0:
-        return html.Div(f"No data for {selected_subgroup}", style={'color': '#666'})
-    
-    # Calculate metrics
-    total_passengers = len(subgroup_data)
-    satisfaction_rate = 0
-    if 'satisfaction' in df.columns:
-        satisfaction_rate = (subgroup_data['satisfaction'] == 'satisfied').mean() * 100
-    
-    # Calculate overall service quality score if available
-    service_score = 0
-    if 'Service_Quality_Score' in subgroup_data.columns:
-        service_score = subgroup_data['Service_Quality_Score'].mean()
-    
-    return html.Div([
-        html.H6(f"Analysis for {selected_subgroup}", 
-               style={'color': '#1a237e', 'marginBottom': '8px', 'fontWeight': 'bold'}),
-        html.Div([
-            html.Span(f"Passengers: {total_passengers:,}", 
-                     style={'marginRight': '15px', 'fontSize': '12px'}),
-            html.Span(f"Satisfaction: {satisfaction_rate:.1f}%", 
-                     style={'marginRight': '15px', 'fontSize': '12px', 'color': '#4caf50'}),
-            html.Span(f"Avg Service: {service_score:.2f}/5.0", 
-                     style={'fontSize': '12px', 'color': '#2196f3'})
-        ])
-    ])
-
 def generate_service_insights(df, service_attributes, group_col='Class', selected_subgroup=None, chart_type='average'):
     """
     Generate insights text for the selected subgroup's service factors
@@ -301,7 +264,11 @@ def generate_service_insights(df, service_attributes, group_col='Class', selecte
     if group_col not in df.columns or not service_attributes:
         return html.Div("No insights available", style={'color': '#666', 'fontStyle': 'italic'})
     
-    groups = sorted(df[group_col].unique())
+    # Preserve categorical order if available
+    if pd.api.types.is_categorical_dtype(df[group_col]):
+        groups = df[group_col].cat.categories.tolist()
+    else:
+        groups = df[group_col].unique().tolist()
     
     if selected_subgroup is None or selected_subgroup not in groups:
         selected_subgroup = groups[0] if groups else None
@@ -501,7 +468,11 @@ def get_subgroup_comparison_data(df, service_attributes, group_col='Class'):
         return None
     
     comparison_data = {}
-    groups = sorted(df[group_col].unique())
+    # Preserve categorical order if available
+    if pd.api.types.is_categorical_dtype(df[group_col]):
+        groups = df[group_col].cat.categories.tolist()
+    else:
+        groups = df[group_col].unique().tolist()
     
     for group in groups:
         group_data = df[df[group_col] == group]
@@ -514,3 +485,52 @@ def get_subgroup_comparison_data(df, service_attributes, group_col='Class'):
         comparison_data[group] = group_ratings
     
     return comparison_data
+
+def generate_subgroup_info_header(df, group_col='Class', selected_subgroup=None):
+    """
+    Generate header information for the selected subgroup
+    """
+    if group_col not in df.columns:
+        return html.Div("No subgroup data available", style={'color': '#666'})
+    
+    # Preserve categorical order if available
+    if pd.api.types.is_categorical_dtype(df[group_col]):
+        groups = df[group_col].cat.categories.tolist()
+    else:
+        groups = df[group_col].unique().tolist()
+    
+    if selected_subgroup is None or selected_subgroup not in groups:
+        selected_subgroup = groups[0] if groups else None
+    
+    if selected_subgroup is None:
+        return html.Div("No subgroup selected", style={'color': '#666'})
+    
+    # Get subgroup data
+    subgroup_data = df[df[group_col] == selected_subgroup]
+    
+    if len(subgroup_data) == 0:
+        return html.Div(f"No data for {selected_subgroup}", style={'color': '#666'})
+    
+    # Calculate metrics
+    total_passengers = len(subgroup_data)
+    satisfaction_rate = 0
+    if 'satisfaction' in df.columns:
+        satisfaction_rate = (subgroup_data['satisfaction'] == 'satisfied').mean() * 100
+    
+    # Calculate overall service quality score if available
+    service_score = 0
+    if 'Service_Quality_Score' in subgroup_data.columns:
+        service_score = subgroup_data['Service_Quality_Score'].mean()
+    
+    return html.Div([
+        html.H6(f"Analysis for {selected_subgroup}", 
+               style={'color': '#1a237e', 'marginBottom': '8px', 'fontWeight': 'bold'}),
+        html.Div([
+            html.Span(f"Passengers: {total_passengers:,}", 
+                     style={'marginRight': '15px', 'fontSize': '12px'}),
+            html.Span(f"Satisfaction: {satisfaction_rate:.1f}%", 
+                     style={'marginRight': '15px', 'fontSize': '12px', 'color': '#4caf50'}),
+            html.Span(f"Avg Service: {service_score:.2f}/5.0", 
+                     style={'fontSize': '12px', 'color': '#2196f3'})
+        ])
+    ])

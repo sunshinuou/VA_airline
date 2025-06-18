@@ -1,4 +1,6 @@
 import plotly.graph_objects as go
+from utils import get_display_name, get_display_value
+import pandas as pd
 
 def create_parallel_coordinates(df, service_attributes, color_by='satisfaction', sample_size=5000, selected_dimensions=None):
     """
@@ -59,7 +61,7 @@ def create_parallel_coordinates(df, service_attributes, color_by='satisfaction',
             data = plot_data[col_name].dropna()
             if len(data) > 0:
                 dimensions.append(dict(
-                    label=dim,
+                    label=get_display_name(dim),
                     values=plot_data[col_name],
                     range=[data.min(), data.max()]
                 ))
@@ -147,14 +149,23 @@ def create_parallel_categories_chart(df, selected_dimensions, sample_size=5000):
     for i, (col, label) in enumerate(zip(valid_dimensions, valid_labels)):
         # Convert to string and handle missing values
         values = plot_data[col].astype(str).fillna('Unknown')
-        
-        # Get unique categories
-        categories = sorted(values.unique())
+        # Map values for display
+        display_values = values.map(get_display_value)
+        # Get unique categories - preserve categorical order if available
+        if pd.api.types.is_categorical_dtype(plot_data[col]):
+            # For categorical data, use the categories in their defined order
+            categories = plot_data[col].cat.categories.tolist()
+            # Map the categories to display values
+            display_categories = [get_display_value(str(cat)) for cat in categories]
+        else:
+            # For non-categorical data, use natural order (don't sort alphabetically)
+            display_categories = display_values.unique().tolist()
         
         dimensions.append(dict(
-            values=values,
-            label=label,
-            categoryorder='category ascending'
+            values=display_values,
+            label=get_display_name(label),
+            categoryorder='array',
+            categoryarray=display_categories
         ))
     
     # Create parallel categories chart
@@ -163,24 +174,19 @@ def create_parallel_categories_chart(df, selected_dimensions, sample_size=5000):
         line=dict(
             colorscale='viridis',
             showscale=True,
-            shape='hspline'  # Smooth curves
+            shape='hspline'
         ),
         hoveron='color',
         hoverinfo='count+probability',
-        labelfont=dict(size=12, family="Arial"),
-        tickfont=dict(size=10, family="Arial"),
+        labelfont=dict(size=16, family="Arial"),
+        tickfont=dict(size=16, family="Arial"),
         arrangement='freeform'
     )])
     
     fig.update_layout(
-        title={
-            'text': 'Customer Journey Flow Analysis',
-            'x': 0.5,
-            'xanchor': 'center',
-            'font': {'size': 16, 'color': '#1a237e'}
-        },
-        height=350,
-        margin=dict(l=20, r=20, t=60, b=20),
+        height=400,
+        width=850,
+        margin=dict(l=10, r=10, t=60, b=20),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)'
     )

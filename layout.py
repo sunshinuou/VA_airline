@@ -25,7 +25,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                 html.Div([
                     html.Div([
                         html.Div([
-                            html.Label("Sample Size", style={'fontWeight': 'bold', 'fontSize': '12px', 'display': 'inline-block', 'marginRight': '5px', 'verticalAlign': 'middle'}),
+                            html.Label("Sample Size", style={'fontWeight': 'bold', 'fontSize': '18px', 'display': 'inline-block', 'marginRight': '5px', 'verticalAlign': 'middle'}),
                             dcc.Dropdown(
                                 id='sample-dropdown',
                                 options=[
@@ -37,7 +37,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                                 clearable=False,
                                 style={
                                     'width': '60px',
-                                    'fontSize': '12px',
+                                    'fontSize': '18px',
                                     'display': 'inline-block',
                                     'height': '30px',
                                     'minHeight': '30px',
@@ -61,7 +61,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                 html.Div([
                     # Title and Sample Size in header
                     html.Div([
-                        html.H5("Dataset Overview", className="mb-2", style={'color': '#1a237e', 'display': 'inline-block', 'marginBottom': 0})
+                        html.H5("Dataset Overview", className="mb-2", style={'color': '#1a237e', 'display': 'inline-block', 'marginBottom': 0, 'fontSize': '28px', 'fontWeight': 'bold'})
                     ], style={'marginBottom': '8px'}),
                     
                     # Summary stats (3 metrics) - Keep Passengers, Satisfaction, Avg Service
@@ -69,17 +69,17 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                         # Total Passengers
                         html.Div([
                             html.H4(f"0", style={'color': '#d32f2f', 'margin': '0', 'fontSize': '20px'}),
-                            html.P("Total Passengers", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
+                            html.P("Total Passengers", style={'color': '#666', 'margin': '5px 0', 'fontSize': '15px'})
                         ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
                         # Satisfaction Rate
                         html.Div([
                             html.H4(f"0%", style={'color': '#4caf50', 'margin': '0', 'fontSize': '20px'}),
-                            html.P("Satisfaction Rate", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
+                            html.P("Satisfaction Rate", style={'color': '#666', 'margin': '5px 0', 'fontSize': '15px'})
                         ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
                         # Avg Service Score
                         html.Div([
                             html.H4(f"0.0/5.0", style={'color': '#2196f3', 'margin': '0', 'fontSize': '20px'}),
-                            html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '12px'})
+                            html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '15px'})
                         ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'})
                     ], id='summary-stats-container', style={'display': 'flex', 'justifyContent': 'space-between', 'minHeight': '80px', 'marginBottom': '6px'}),
                     
@@ -91,7 +91,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                                      'marginBottom': '4px',
                                      'display': 'block',
                                      'color': '#1a237e',
-                                     'fontSize': '14px'
+                                     'fontSize': '23px'
                                  }),
                         dcc.Dropdown(
                             id='subgroup-dropdown-distribution',
@@ -99,7 +99,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                             value=subgroup_options[0]['value'] if subgroup_options else None,
                             clearable=False,
                             style={
-                                'fontSize': '13px',
+                                'fontSize': '23px',
                                 'marginBottom': '8px'
                             },
                             optionHeight=40,
@@ -135,42 +135,17 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                 
                 # Middle: Service Quality Radar
                 html.Div([
-                    # Title and dropdown area at top
+                    # Title area at top
                     html.Div([
                         html.H5("Service Quality Radar", 
-                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left'}),
-                        html.Div([
-                            html.Label("Group by:", 
-                                     style={
-                                         'fontWeight': 'bold', 
-                                         'marginBottom': '5px',
-                                         'display': 'block',
-                                         'color': '#1a237e',
-                                         'fontSize': '14px'
-                                     }),
-                            dcc.Dropdown(
-                                id='subgroup-dropdown',
-                                options=subgroup_options,
-                                value=subgroup_options[0]['value'] if subgroup_options else None,
-                                clearable=False,
-                                style={
-                                    'fontSize': '13px'
-                                },
-                                optionHeight=40,
-                                maxHeight=200
-                            )
-                        ], style={
-                            'marginBottom': '15px',
-                            'position': 'relative',
-                            'zIndex': '1000'
-                        })
+                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left', 'fontSize': '28px', 'fontWeight': 'bold'})
                     ]),
                     # Radar Chart area
                     html.Div([
                         dcc.Graph(
                             id='radar-chart', 
                             style={
-                                'height': '380px',
+                                'height': '400px',
                                 'width': '100%'
                             },
                             config={
@@ -178,8 +153,11 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                             }
                         )
                     ], style={
-                        'height': '380px',
-                        'flex': '1'
+                        'height': '400px',
+                        'flex': '1',
+                        'display': 'flex',
+                        'justifyContent': 'center',
+                        'alignItems': 'center'
                     })
                 ], className="module-container", style={
                     'width': '32%',
@@ -200,46 +178,18 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                     # Title
                     html.Div([
                         html.H5("Service Factor Rankings (Random Forest Impact)", 
-                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left'})
+                               style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left', 'fontSize': '28px', 'fontWeight': 'bold'})
                     ]),
-                    
-                    # Add group by dropdown for Service Factor Rankings
-                    html.Div([
-                        html.Label("Group by:", 
-                                 style={
-                                     'fontWeight': 'bold', 
-                                     'marginBottom': '5px',
-                                     'display': 'block',
-                                     'color': '#1a237e',
-                                     'fontSize': '14px'
-                                 }),
-                        dcc.Dropdown(
-                            id='service-factors-group-dropdown',
-                            options=subgroup_options,
-                            value=subgroup_options[0]['value'] if subgroup_options else None,
-                            clearable=False,
-                            style={
-                                'fontSize': '13px',
-                                'marginBottom': '10px'
-                            },
-                            optionHeight=40,
-                            maxHeight=200
-                        )
-                    ], style={
-                        'marginBottom': '15px',
-                        'position': 'relative',
-                        'zIndex': '1000'
-                    }),
                     
                     # Add subgroup dropdown to choose specific subgroup
                     html.Div([
-                        html.Label("Select Subgroup:", style={'fontSize': '12px', 'fontWeight': 'bold', 'marginBottom': '5px'}),
+                        html.Label("Select Subgroup:", style={'fontWeight': 'bold', 'color': '#1a237e', 'fontSize': '23px', 'marginBottom': '5px'}),
                         dcc.Dropdown(
                             id='service-factors-subgroup-dropdown',
                             options=[],  # Will be populated by callback
                             value=None,
                             clearable=False,
-                            style={'fontSize': '12px', 'marginBottom': '10px'}
+                            style={'fontSize': '23px', 'marginBottom': '10px'}
                         )
                     ]),
                     
@@ -286,40 +236,50 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
             html.Div([
                 # Left: Parallel Categories
                 html.Div([
-                    html.H5("Parallel Categories", className="mb-3", style={'color': '#1a237e'}),
+                    html.H5("Parallel Categories", className="mb-3", style={'color': '#1a237e', 'fontSize': '28px', 'fontWeight': 'bold'}),
                     dbc.Row([
                         dbc.Col([
-                            html.Label("Select Category Flow (max 6):", style={'fontWeight': 'bold'}),
+                            html.Label("Select Category Flow (max 6):", style={'fontWeight': 'bold', 'color': '#1a237e', 'fontSize': '23px'}),
                             dcc.Dropdown(
                                 id='pc-dimensions-dropdown',
                                 options=pc_dimension_options,
                                 value=['Customer Type', 'Class', 'Type of Travel', 'Satisfaction'],
                                 multi=True,
                                 clearable=False,
-                                maxHeight=200
+                                maxHeight=300,
+                                style={'fontSize': '23px'}
                             )
                         ], width=12)
                     ], className="mb-2"),
-                    dcc.Graph(id='parallel-coords', style={'height': '300px', 'width': '100%'})
+                    dcc.Graph(
+                        id='parallel-coords',
+                        style={
+                            'height': '300px',
+                            'width': '700px',
+                            'marginLeft': 'auto',
+                            'marginRight': 'auto',
+                            'display': 'block'
+                        }
+                    )
                 ], className="module-container", style={
-                    'width': '50%', 
+                    'width': '55%',
                     'height': '50vh',
                     'float': 'left',
-                    'margin': '0 1.5% 0 0', 
+                    'margin': '0 1.5% 0 0',
                     'padding': '15px',
-                    'backgroundColor': '#fff', 
+                    'backgroundColor': '#fff',
                     'border': '1px solid #ddd',
-                    'borderRadius': '8px', 
+                    'borderRadius': '8px',
                     'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'
                 }),
                 
                 # Right: Passenger Segmentation Analysis (containing clustering functionality)
                 html.Div([
-                    html.H5("Passenger Segmentation Analysis", className="mb-3", style={'color': '#1a237e'}),
+                    html.H5("Passenger Segmentation Analysis", className="mb-3", style={'color': '#1a237e', 'fontSize': '28px', 'fontWeight': 'bold'}),
                     
                     # Chart selection dropdown for clustering analysis
                     html.Div([
-                        html.Label("Analysis Type:", style={'fontWeight': 'bold', 'fontSize': '12px'}),
+                        html.Label("Analysis Type:", style={'fontWeight': 'bold', 'fontSize': '23px', 'color': '#1a237e'}),
                         dcc.Dropdown(
                             id='clustering-chart-selector',
                             options=[
@@ -329,7 +289,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                             ],
                             value='pca_scatter',
                             clearable=False,
-                            style={'fontSize': '12px', 'marginBottom': '10px'}
+                            style={'fontSize': '23px', 'marginBottom': '10px'}
                         )
                     ], style={'marginBottom': '15px'}),
                     
@@ -338,9 +298,9 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                         id='clustering-chart',
                         style={'height': '280px', 'marginBottom': '15px'},
                         config={'displayModeBar': False}
-                    ),
+                    )
                 ], className="module-container", style={
-                    'width': '47%', 
+                    'width': '43%', 
                     'height': '50vh',
                     'float': 'right',
                     'margin': '0', 
