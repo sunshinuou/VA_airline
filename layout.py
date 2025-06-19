@@ -232,14 +232,14 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                 })
             ], style={'overflow': 'hidden'}),
             
-            # Row 2: Parallel Categories + Predictive Analysis (with Clustering inside)
+            # Row 2: Parallel Categories + Passenger Segmentation Analysis
             html.Div([
-                # Left: Parallel Categories
+                # Left: Parallel Categories - FIXED WIDTH TO TAKE FULL AVAILABLE SPACE
                 html.Div([
                     html.H5("Parallel Categories", className="mb-3", style={'color': '#1a237e', 'fontSize': '28px', 'fontWeight': 'bold'}),
                     dbc.Row([
                         dbc.Col([
-                            html.Label("Select Category Flow (max 6):", style={'fontWeight': 'bold', 'color': '#1a237e', 'fontSize': '23px'}),
+                            html.Label("Select Category Flow:", style={'fontWeight': 'bold', 'color': '#1a237e', 'fontSize': '23px'}),
                             dcc.Dropdown(
                                 id='pc-dimensions-dropdown',
                                 options=pc_dimension_options,
@@ -251,14 +251,16 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                             )
                         ], width=12)
                     ], className="mb-2"),
+                    # FIXED: Remove fixed width and center positioning, let chart take full width
                     dcc.Graph(
                         id='parallel-coords',
                         style={
                             'height': '300px',
-                            'width': '700px',
-                            'marginLeft': 'auto',
-                            'marginRight': 'auto',
-                            'display': 'block'
+                            'width': '100%'  # Take full width of container
+                        },
+                        config={
+                            'displayModeBar': False,
+                            'responsive': True  # Make chart responsive
                         }
                     )
                 ], className="module-container", style={

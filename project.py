@@ -7,9 +7,8 @@ import dash_bootstrap_components as dbc
 from layout import create_compact_layout
 from preprocess import preprocess_airline_data
 from modules.RaderChart import create_radar_chart
-from modules.ParallelCoordinates import create_parallel_coordinates
 from modules.Distribution import create_distribution_chart
-from modules.ParallelCoordinates import create_parallel_coordinates, create_parallel_categories_chart
+from modules.ParallelCategories import create_parallel_categories_chart
 from modules.ServiceFactor import create_service_factors_chart, generate_subgroup_info_header
 from modules.clustering import CustomerSegmentationAnalyzer
 from utils import get_display_name
