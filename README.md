@@ -86,7 +86,7 @@ airline-satisfaction-dashboard/
 │   └── data2.csv            # Airline satisfaction dataset
 ├── modules/
 │   ├── Distribution.py      # Distribution chart components
-│   ├── ParallelCoordinates.py # Parallel categories visualization
+│   ├── ParallelCategories.py # Parallel categories visualization
 │   ├── RaderChart.py        # Radar chart implementation
 │   ├── ServiceFactor.py     # Service factor analysis
 │   ├── clustering.py        # Customer segmentation analysis
