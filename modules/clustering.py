@@ -7,7 +7,6 @@ from sklearn.metrics import silhouette_score, calinski_harabasz_score
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-from dash import html, dcc
 import warnings
 from utils import get_display_name
 warnings.filterwarnings('ignore')
@@ -30,11 +29,7 @@ class CustomerSegmentationAnalyzer:
         Prepare features for clustering analysis
         """
         clustering_features = []
-        
-        # Service attributes (numerical)
         clustering_features.extend(self.service_attributes)
-        
-        # Additional numerical features
         numerical_features = [
             'Age', 'Flight Distance', 
             'Departure Delay in Minutes', 'Arrival Delay in Minutes'
@@ -44,7 +39,7 @@ class CustomerSegmentationAnalyzer:
             if feature in self.df.columns:
                 clustering_features.append(feature)
         
-        # Categorical features (if requested)
+        # categorical features (if requested)
         if include_categorical:
             categorical_features = [
                 'Gender', 'Customer Type', 'Type of Travel', 'Class'
@@ -52,17 +47,14 @@ class CustomerSegmentationAnalyzer:
             
             for feature in categorical_features:
                 if feature in self.df.columns:
-                    # Encode categorical variables
                     le = LabelEncoder()
                     encoded_col = f'{feature}_encoded'
                     self.df[encoded_col] = le.fit_transform(self.df[feature].astype(str))
                     clustering_features.append(encoded_col)
                     self.feature_encoders[feature] = le
         
-        # Prepare feature matrix
+        # feature matrix
         X = self.df[clustering_features].copy()
-        
-        # Handle missing values
         X = X.fillna(X.mean())
         
         # Scale features
@@ -103,7 +95,7 @@ class CustomerSegmentationAnalyzer:
     
     def perform_kmeans_clustering(self, n_clusters=None):
         """
-        Perform K-means clustering
+        K-means clustering
         """
         features, X_scaled = self.prepare_clustering_features()
         
@@ -111,14 +103,11 @@ class CustomerSegmentationAnalyzer:
             optimal_results = self.find_optimal_clusters()
             n_clusters = optimal_results['optimal_k']
         
-        # Perform K-means clustering
         kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
         cluster_labels = kmeans.fit_predict(X_scaled)
-        
-        # Add cluster labels to dataframe
         self.df['Cluster'] = cluster_labels
         
-        # Calculate cluster centers in original space
+        # cluster centers in original space
         cluster_centers = []
         for i in range(n_clusters):
             cluster_data = self.df[self.df['Cluster'] == i]
@@ -127,7 +116,6 @@ class CustomerSegmentationAnalyzer:
                 center[feature] = cluster_data[feature].mean()
             cluster_centers.append(center)
         
-        # Store results
         self.cluster_results['kmeans'] = {
             'model': kmeans,
             'n_clusters': n_clusters,
@@ -140,7 +128,7 @@ class CustomerSegmentationAnalyzer:
     
     def perform_pca_analysis(self, n_components=2):
         """
-        Perform PCA for dimensionality reduction and visualization
+        PCA for dimensionality reduction and visualization
         """
         features, X_scaled = self.prepare_clustering_features()
         
@@ -166,7 +154,7 @@ class CustomerSegmentationAnalyzer:
         for cluster_id in range(n_clusters):
             cluster_data = self.df[self.df['Cluster'] == cluster_id]
             
-            # Basic statistics
+            # basic statistics
             analysis = {
                 'size': len(cluster_data),
                 'size_percentage': len(cluster_data) / len(self.df) * 100,
@@ -175,11 +163,11 @@ class CustomerSegmentationAnalyzer:
                 'dominant_characteristics': {}
             }
             
-            # Service scores
+            # service scores
             for attr in self.service_attributes:
                 analysis['avg_service_scores'][attr] = cluster_data[attr].mean()
             
-            # Dominant characteristics
+            # dominant characteristics
             categorical_features = ['Gender', 'Customer Type', 'Type of Travel', 'Class']
             for feature in categorical_features:
                 if feature in cluster_data.columns:
@@ -187,7 +175,7 @@ class CustomerSegmentationAnalyzer:
                     if len(mode_value) > 0:
                         analysis['dominant_characteristics'][feature] = mode_value[0]
             
-            # Age statistics
+            # age statistics
             if 'Age' in cluster_data.columns:
                 analysis['avg_age'] = cluster_data['Age'].mean()
                 analysis['age_range'] = f"{cluster_data['Age'].min()}-{cluster_data['Age'].max()}"
@@ -207,7 +195,7 @@ class CustomerSegmentationAnalyzer:
         elif chart_type == 'cluster_profiles':
             return self.create_cluster_profiles_chart()
         else:
-            return self.create_pca_scatter_plot()  # Default to PCA scatter plot
+            return self.create_pca_scatter_plot()
     
     def create_pca_scatter_plot(self):
         """
@@ -272,7 +260,6 @@ class CustomerSegmentationAnalyzer:
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)'
         )
-        # 居中处理：设置xaxis和yaxis的automargin和zeroline
         fig.update_xaxes(automargin=True, zeroline=False)
         fig.update_yaxes(automargin=True, zeroline=False)
         return fig
@@ -284,7 +271,7 @@ class CustomerSegmentationAnalyzer:
         if 'Cluster' not in self.df.columns:
             self.perform_kmeans_clustering()
         
-        # Calculate mean service scores for each cluster
+        # mean service scores for each cluster
         cluster_profiles = []
         for cluster_id in sorted(self.df['Cluster'].unique()):
             cluster_data = self.df[self.df['Cluster'] == cluster_id]
@@ -294,13 +281,13 @@ class CustomerSegmentationAnalyzer:
                 'Satisfaction': (cluster_data['satisfaction'] == 'satisfied').mean() * 100
             }
             
-            # Add service scores
+            # add service scores
             for attr in self.service_attributes:
                 profile[attr] = cluster_data[attr].mean()
             
             cluster_profiles.append(profile)
         
-        # Create radar chart
+        # radar chart
         fig = go.Figure()
         
         for profile in cluster_profiles:
@@ -348,10 +335,10 @@ class CustomerSegmentationAnalyzer:
         satisfaction_rates = [cluster_analysis[cid]['satisfaction_rate'] for cid in cluster_ids]
         cluster_sizes = [cluster_analysis[cid]['size'] for cid in cluster_ids]
         
-        # Create subplot with secondary y-axis
+        # create subplot with secondary y-axis
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         
-        # Satisfaction rate bars
+        # satisfaction rate bars
         fig.add_trace(
             go.Bar(
                 x=[f'Cluster {cid}' for cid in cluster_ids],
@@ -364,7 +351,7 @@ class CustomerSegmentationAnalyzer:
             secondary_y=False,
         )
         
-        # Cluster size line
+        # cluster size line
         fig.add_trace(
             go.Scatter(
                 x=[f'Cluster {cid}' for cid in cluster_ids],
@@ -378,14 +365,13 @@ class CustomerSegmentationAnalyzer:
             secondary_y=True,
         )
         
-        # Update axes
         fig.update_xaxes(title_text="Passenger Clusters", titlefont=dict(size=20, family="Arial"), tickfont=dict(size=20, family="Arial"))
         fig.update_yaxes(title_text="Satisfaction Rate (%)", secondary_y=False, titlefont=dict(size=20, family="Arial"), tickfont=dict(size=20, family="Arial"))
         fig.update_yaxes(title_text="Number of Passengers", secondary_y=True, titlefont=dict(size=20, family="Arial"), tickfont=dict(size=20, family="Arial"))
         
         fig.update_layout(
             title={
-                'text': 'Satisfaction vs Size',  # Only keep the part after the colon
+                'text': 'Satisfaction vs Size', 
                 'x': 0.5,
                 'xanchor': 'center',
                 'font': {'size': 20, 'color': '#1a237e', 'family': 'Arial'}
@@ -395,7 +381,6 @@ class CustomerSegmentationAnalyzer:
             legend=dict(x=0.02, y=0.98, font=dict(size=20, family="Arial")),
             font=dict(size=20, family="Arial")
         )
-        # Change bar color to deep blue
         fig.data[0].marker.color = '#1a237e'
         
         return fig

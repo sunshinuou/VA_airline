@@ -27,14 +27,11 @@ class SubgroupRFAnalyzer:
         """
         Prepare data for Random Forest training
         """
-        # Use only service attributes as features
         X = subgroup_data[self.service_attributes].copy()
         
-        # Target variable (satisfaction)
         if 'satisfaction_binary' in subgroup_data.columns:
             y = subgroup_data['satisfaction_binary']
         else:
-            # Create binary satisfaction if not exists
             y = (subgroup_data['satisfaction'] == 'satisfied').astype(int)
         
         return X, y
@@ -47,26 +44,23 @@ class SubgroupRFAnalyzer:
             print(f"Warning: {subgroup_name} has only {len(subgroup_data)} samples (min: {min_samples})")
             return None, None, None
         
-        # Prepare data
+        # prepare data
         X, y = self.prepare_data_for_subgroup(subgroup_data)
-        
-        # Check if we have both satisfied and dissatisfied customers
         if len(y.unique()) < 2:
             print(f"Warning: {subgroup_name} has only one class (all satisfied or all dissatisfied)")
             return None, None, None
         
-        # Split data
+        # split data
         try:
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=0.3, random_state=42, stratify=y
             )
         except ValueError:
-            # If stratify fails, try without stratification
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=0.3, random_state=42
             )
         
-        # Train Random Forest
+        # train
         rf = RandomForestClassifier(
             n_estimators=100,
             max_depth=10,
@@ -77,11 +71,11 @@ class SubgroupRFAnalyzer:
         
         rf.fit(X_train, y_train)
         
-        # Calculate accuracy
+        # accuracy
         y_pred = rf.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
         
-        # Get feature importance
+        # feature importance
         feature_importance = dict(zip(self.service_attributes, rf.feature_importances_))
         
         return rf, feature_importance, accuracy
@@ -104,20 +98,19 @@ class SubgroupRFAnalyzer:
             print(f"\n--- {subgroup} ---")
             print(f"Sample size: {len(subgroup_data)}")
             
-            # Train Random Forest for this subgroup
+            # train random forest for this subgroup
             rf_model, feature_importance, accuracy = self.train_rf_for_subgroup(
                 subgroup_data, subgroup
             )
             
             if rf_model is not None:
-                # Store results
                 self.rf_models[subgroup] = rf_model
                 self.feature_importance_results[subgroup] = feature_importance
                 self.accuracy_results[subgroup] = accuracy
                 
                 print(f"Model accuracy: {accuracy:.3f}")
                 
-                # Show top 5 most important factors
+                # top 5 most important factors
                 sorted_importance = sorted(feature_importance.items(), 
                                          key=lambda x: x[1], reverse=True)
                 print("Top 5 most impactful service factors:")
@@ -283,18 +276,17 @@ class SubgroupRFAnalyzer:
         importance_dict = self.feature_importance_results[selected_subgroup]
         accuracy = self.accuracy_results[selected_subgroup]
         
-        # Sort by importance
         sorted_importance = sorted(importance_dict.items(), 
                                  key=lambda x: x[1], reverse=True)
         
-        # Get insights
+        # get insights
         top_factor = sorted_importance[0]
         high_importance_factors = [f for f, imp in sorted_importance if imp >= 0.10]
         low_importance_factors = [f for f, imp in sorted_importance if imp < 0.05]
         
         insights = []
         
-        # Model quality
+        # model quality
         if accuracy >= 0.85:
             model_quality = "Excellent"
             quality_color = "#4caf50"
@@ -311,26 +303,26 @@ class SubgroupRFAnalyzer:
                      style={'color': quality_color, 'fontWeight': 'bold'})
         ], style={'margin': '5px 0'}))
         
-        # Top driving factor
+        # top driving factor
         insights.append(html.P([
             html.Span("🎯 Top Driver: ", style={'fontWeight': 'bold'}),
             f"{top_factor[0]} ({top_factor[1]:.1%} importance)"
         ], style={'margin': '5px 0'}))
         
-        # High impact factors count
+        # high impact factors count
         insights.append(html.P([
             html.Span("⚡ High Impact Factors: ", style={'fontWeight': 'bold', 'color': '#ff6b6b'}),
             f"{len(high_importance_factors)} factors with >10% importance"
         ], style={'margin': '5px 0'}))
         
-        # Low impact factors
+        # low impact factors
         if low_importance_factors:
             insights.append(html.P([
-                html.Span("💡 Optimization Opportunity: ", style={'fontWeight': 'bold', 'color': '#2196f3'}),
+                html.Span("Optimization Opportunity: ", style={'fontWeight': 'bold', 'color': '#2196f3'}),
                 f"{len(low_importance_factors)} factors have minimal impact (<5%)"
             ], style={'margin': '5px 0'}))
         
-        # Strategic recommendation
+        # strategic recommendation
         if len(high_importance_factors) <= 3:
             recommendation = "Focus resources on the few high-impact factors"
         elif len(high_importance_factors) <= 6:
@@ -339,7 +331,7 @@ class SubgroupRFAnalyzer:
             recommendation = "Many factors matter - systematic improvement needed"
         
         insights.append(html.P([
-            html.Span("📋 Strategy: ", style={'fontWeight': 'bold', 'color': '#9c27b0'}),
+            html.Span("Strategy: ", style={'fontWeight': 'bold', 'color': '#9c27b0'}),
             recommendation
         ], style={'margin': '5px 0'}))
         
@@ -357,10 +349,8 @@ class SubgroupRFAnalyzer:
             importance_dict = self.feature_importance_results[subgroup]
             accuracy = self.accuracy_results[subgroup]
             
-            # Find top factor
             top_factor = max(importance_dict.items(), key=lambda x: x[1])
             
-            # Count high impact factors
             high_impact_count = sum(1 for imp in importance_dict.values() if imp >= 0.10)
             
             summary[subgroup] = {
@@ -377,26 +367,20 @@ def create_rf_analysis_for_dashboard(df, service_attributes, group_col='Class', 
     """
     Main function to create Random Forest analysis for the dashboard
     """
-    # Initialize analyzer
+    # analyzer
     analyzer = SubgroupRFAnalyzer(df, service_attributes)
-    
-    # Run analysis for all subgroups
     analyzer.analyze_all_subgroups(group_col)
     
-    # Get available subgroups
+    # get available subgroups
     groups = sorted(df[group_col].unique()) if group_col in df.columns else []
     
-    # If no specific subgroup selected, use the first one
     if selected_subgroup is None or selected_subgroup not in groups:
         selected_subgroup = groups[0] if groups else None
     
     if selected_subgroup is None:
         return go.Figure(), html.Div("No data available")
     
-    # Create chart for selected subgroup
     rf_chart = analyzer.create_single_subgroup_chart(selected_subgroup, group_col)
-    
-    # Generate insights
     rf_insights = analyzer.generate_rf_insights(selected_subgroup, group_col)
     
     return rf_chart, rf_insights

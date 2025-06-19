@@ -3,9 +3,8 @@ import dash_bootstrap_components as dbc
 
 def create_compact_layout(subgroup_options, color_options=None, pc_dimension_options=None):
     """
-    Compact layout with clustering properly integrated into predictive analysis module
+    Overall compact layout for the airline passenger satisfaction dashboard.
     """
-    # Default options for parallel categories if not provided
     if not pc_dimension_options:
         pc_dimension_options = [
             {'label': 'Customer Type', 'value': 'Customer Type'},
@@ -59,12 +58,12 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
             html.Div([
                 # Left: Dataset Overview
                 html.Div([
-                    # Title and Sample Size in header
+                    # Title and Sample Size
                     html.Div([
                         html.H5("Dataset Overview", className="mb-2", style={'color': '#1a237e', 'display': 'inline-block', 'marginBottom': 0, 'fontSize': '28px', 'fontWeight': 'bold'})
                     ], style={'marginBottom': '8px'}),
                     
-                    # Summary stats (3 metrics) - Keep Passengers, Satisfaction, Avg Service
+                    # Summary stats
                     html.Div([
                         # Total Passengers
                         html.Div([
@@ -83,7 +82,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                         ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'})
                     ], id='summary-stats-container', style={'display': 'flex', 'justifyContent': 'space-between', 'minHeight': '80px', 'marginBottom': '6px'}),
                     
-                    # Group by for distribution chart (direct child)
+                    # Group by for distribution chart
                     html.Div([
                         html.Label("Group by:", 
                                  style={
@@ -135,7 +134,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                 
                 # Middle: Service Quality Radar
                 html.Div([
-                    # Title area at top
+                    # Title
                     html.Div([
                         html.H5("Service Quality Radar", 
                                style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left', 'fontSize': '28px', 'fontWeight': 'bold'})
@@ -181,19 +180,19 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                                style={'color': '#1a237e', 'marginBottom': '10px', 'textAlign': 'left', 'fontSize': '28px', 'fontWeight': 'bold'})
                     ]),
                     
-                    # Add subgroup dropdown to choose specific subgroup
+                    # Subgroup dropdown
                     html.Div([
                         html.Label("Select Subgroup:", style={'fontWeight': 'bold', 'color': '#1a237e', 'fontSize': '23px', 'marginBottom': '5px'}),
                         dcc.Dropdown(
                             id='service-factors-subgroup-dropdown',
-                            options=[],  # Will be populated by callback
+                            options=[],
                             value=None,
                             clearable=False,
                             style={'fontSize': '23px', 'marginBottom': '10px'}
                         )
                     ]),
                     
-                    # Subgroup info header (only Satisfaction and Avg Service - 2 metrics)
+                    # Subgroup info
                     html.Div(
                         id='subgroup-info-header',
                         style={
@@ -234,7 +233,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
             
             # Row 2: Parallel Categories + Passenger Segmentation Analysis
             html.Div([
-                # Left: Parallel Categories - FIXED WIDTH TO TAKE FULL AVAILABLE SPACE
+                # Left: Parallel Categories
                 html.Div([
                     html.H5("Parallel Categories", className="mb-3", style={'color': '#1a237e', 'fontSize': '28px', 'fontWeight': 'bold'}),
                     dbc.Row([
@@ -251,16 +250,15 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                             )
                         ], width=12)
                     ], className="mb-2"),
-                    # FIXED: Remove fixed width and center positioning, let chart take full width
                     dcc.Graph(
                         id='parallel-coords',
                         style={
                             'height': '300px',
-                            'width': '100%'  # Take full width of container
+                            'width': '100%'
                         },
                         config={
                             'displayModeBar': False,
-                            'responsive': True  # Make chart responsive
+                            'responsive': True
                         }
                     )
                 ], className="module-container", style={
@@ -275,11 +273,11 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                     'boxShadow': '0 2px 4px rgba(0,0,0,0.1)'
                 }),
                 
-                # Right: Passenger Segmentation Analysis (containing clustering functionality)
+                # Right: Passenger Cluster Analysis
                 html.Div([
                     html.H5("Passenger Cluster Analysis", className="mb-3", style={'color': '#1a237e', 'fontSize': '28px', 'fontWeight': 'bold'}),
                     
-                    # Chart selection dropdown for clustering analysis
+                    # Chart selection dropdown
                     html.Div([
                         html.Label("Analysis Type:", style={'fontWeight': 'bold', 'fontSize': '23px', 'color': '#1a237e'}),
                         dcc.Dropdown(

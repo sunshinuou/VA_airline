@@ -86,14 +86,12 @@ def analyze_service_factors_by_group(df, group_col='Class', service_attributes=N
     """
     if group_col not in df.columns or service_attributes is None:
         return "Analysis not available"
-    
-    # Ensure we have the satisfaction column
     if 'satisfaction' not in df.columns:
         return "Satisfaction data not available"
     
     analysis_html = []
     
-    # Get unique groups
+    # get unique groups
     groups = df[group_col].unique()
     
     for group in sorted(groups):

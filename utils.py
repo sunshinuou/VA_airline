@@ -1,3 +1,4 @@
+# it provides functions to get display names for columns and values to be used in visualizations
 DISPLAY_NAME_MAP = {
     'Departure/Arrival time convenient': 'DEP/ARR time convenient',
     'Ease of Online booking': 'Online booking',

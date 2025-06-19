@@ -7,13 +7,12 @@ def create_parallel_categories_chart(df, selected_dimensions, sample_size=5000):
     """
     Create parallel categories chart for categorical airline data with full width and complete labels
     """
-    # Sample the data if needed
     if sample_size > 0 and len(df) > sample_size:
         plot_data = df.sample(n=sample_size, random_state=42)
     else:
         plot_data = df.copy()
     
-    # Define available categorical dimensions for airline data
+    # define available categorical dimensions 
     available_dimensions = {
         'Customer Type': 'Customer Type',
         'Gender': 'Gender', 
@@ -25,7 +24,7 @@ def create_parallel_categories_chart(df, selected_dimensions, sample_size=5000):
         'Arrival Delay Category': 'Arrival_Delay_Category'
     }
     
-    # Filter selected dimensions to only include available ones
+    # filter selected dimensions
     valid_dimensions = []
     valid_labels = []
     
@@ -47,33 +46,28 @@ def create_parallel_categories_chart(df, selected_dimensions, sample_size=5000):
             showarrow=False, font=dict(size=14)
         )
     
-    # Prepare dimension data for parallel categories
     dimensions = []
     
     for i, (col, label) in enumerate(zip(valid_dimensions, valid_labels)):
-        # Convert to string and handle missing values
         values = plot_data[col].astype(str).fillna('Unknown')
         
         display_values = values.map(get_display_value)
         
-        # Get unique categories - preserve categorical order if available
+        # Get unique categories
         if pd.api.types.is_categorical_dtype(plot_data[col]):
-            # For categorical data, use the categories in their defined order
             categories = plot_data[col].cat.categories.tolist()
-            # Map the categories to display values using get_display_value
             display_categories = [get_display_value(str(cat)) for cat in categories]
         else:
-            # For non-categorical data, use natural order (don't sort alphabetically)
             display_categories = display_values.unique().tolist()
         
         dimensions.append(dict(
-            values=display_values,  # Use mapped display values
+            values=display_values, 
             label=get_display_name(label),
             categoryorder='array',
             categoryarray=display_categories
         ))
     
-    # Create parallel categories chart
+    # create parallel categories chart
     fig = go.Figure(data=[go.Parcats(
         dimensions=dimensions,
         line=dict(
@@ -94,7 +88,6 @@ def create_parallel_categories_chart(df, selected_dimensions, sample_size=5000):
         margin=dict(l=20, r=20, t=60, b=20),  
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        # Add autosize to make it responsive
         autosize=True
     )
     

@@ -11,7 +11,6 @@ from modules.Distribution import create_distribution_chart
 from modules.ParallelCategories import create_parallel_categories_chart
 from modules.ServiceFactor import create_service_factors_chart, generate_subgroup_info_header
 from modules.clustering import CustomerSegmentationAnalyzer
-from utils import get_display_name
 
 def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgroup=None):
     """
@@ -20,7 +19,7 @@ def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgrou
     if group_col not in df.columns:
         return html.Div("No subgroup data available", style={'color': '#666'})
     
-    # Preserve categorical order if available
+    # preserve categorical order if available
     if pd.api.types.is_categorical_dtype(df[group_col]):
         groups = df[group_col].cat.categories.tolist()
     else:
@@ -32,13 +31,12 @@ def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgrou
     if selected_subgroup is None:
         return html.Div("No subgroup selected", style={'color': '#666'})
     
-    # Get subgroup data
     subgroup_data = df[df[group_col] == selected_subgroup]
     
     if len(subgroup_data) == 0:
         return html.Div(f"No data for {selected_subgroup}", style={'color': '#666'})
     
-    # Calculate metrics - only 2 metrics
+    # calculate metrics
     satisfaction_rate = 0
     if 'satisfaction' in df.columns:
         satisfaction_rate = (subgroup_data['satisfaction'] == 'satisfied').mean() * 100
@@ -77,13 +75,13 @@ def create_dash_app(df, service_attributes):
     """
     app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     
-    # Initialize clustering analyzer (global for callbacks)
+    # initialize clustering analyzer
     global clustering_analyzer
     clustering_analyzer = CustomerSegmentationAnalyzer(df, service_attributes)
     clustering_analyzer.perform_kmeans_clustering()
     clustering_analyzer.perform_pca_analysis()
     
-    # Prepare dropdown options based on available columns
+    # dropdown options
     subgroup_options = []
     potential_subgroups = [
         ('Gender', 'Gender'),
@@ -98,7 +96,7 @@ def create_dash_app(df, service_attributes):
         if value in df.columns:
             subgroup_options.append({'label': label, 'value': value})
     
-    # Define parallel categories dimension options
+    # parallel categories dimension options
     pc_dimension_options = [
         {'label': 'Customer Type', 'value': 'Customer Type'},
         {'label': 'Gender', 'value': 'Gender'},
@@ -110,26 +108,23 @@ def create_dash_app(df, service_attributes):
         {'label': 'Arrival Delay Category', 'value': 'Arrival Delay Category'}
     ]
     
-    # Set the compact layout with proper options
     app.layout = create_compact_layout(subgroup_options, None, pc_dimension_options)
     
-    # Callback for clustering chart updates
+    # Add clustering chart
     @app.callback(
         Output('clustering-chart', 'figure'),
         [Input('clustering-chart-selector', 'value'),
          Input('sample-dropdown', 'value')]
     )
     def update_clustering_analysis(chart_type, sample_size):
-        # Apply sampling if requested
         if sample_size > 0 and len(df) > sample_size:
             sampled_df = df.sample(n=sample_size, random_state=42)
-            # Recreate analyzer with sampled data
             temp_analyzer = CustomerSegmentationAnalyzer(sampled_df, service_attributes)
             temp_analyzer.perform_kmeans_clustering()
             temp_analyzer.perform_pca_analysis()
         else:
             temp_analyzer = clustering_analyzer
-        # Create chart based on selection
+        # create chart based on selection
         chart_fig = temp_analyzer.create_cluster_visualization(chart_type)
         return chart_fig
     
@@ -152,7 +147,7 @@ def create_dash_app(df, service_attributes):
         else:
             return [], None
 
-    # Main callback for all charts - responds to both dropdowns independently
+    # Main callback for all charts
     @app.callback(
         [Output('radar-chart', 'figure'),
          Output('parallel-coords', 'figure'),
@@ -160,7 +155,7 @@ def create_dash_app(df, service_attributes):
          Output('distribution-chart', 'figure'),
          Output('service-factors-chart', 'figure'),
          Output('subgroup-info-header', 'children')],
-        [Input('subgroup-dropdown-distribution', 'value'),  # Dataset Overview
+        [Input('subgroup-dropdown-distribution', 'value'),
          Input('sample-dropdown', 'value'),
          Input('pc-dimensions-dropdown', 'value'),
          Input('service-factors-subgroup-dropdown', 'options'),
@@ -246,12 +241,9 @@ def main():
     
     # Create and run the Dash app
     app = create_dash_app(df_processed, service_attributes)
-    
     print("\n=== STARTING DASH SERVER ===")
     print("Dashboard will be available at: http://127.0.0.1:8050/")
     print("Press Ctrl+C to stop the server")
-    
-    # Use app.run() instead of app.run_server() for newer Dash versions
     app.run(debug=True)
 
 if __name__ == "__main__":

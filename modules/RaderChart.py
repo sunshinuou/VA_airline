@@ -12,7 +12,7 @@ def create_radar_chart(df, service_attributes, subgroup_col, subgroup_values=Non
     
     if subgroup_values is None:
         subgroup_values = df[subgroup_col].unique()
-        # Limit to 4 subgroups for better readability
+        # limit to 4 subgroups for better readability
         if len(subgroup_values) > 4:
             subgroup_values = subgroup_values[:4]
     
@@ -21,17 +21,14 @@ def create_radar_chart(df, service_attributes, subgroup_col, subgroup_values=Non
     colors = px.colors.qualitative.Set1[:len(subgroup_values)]
     
     for i, subgroup in enumerate(subgroup_values):
-        # Filter data for this subgroup
         subgroup_data = df[df[subgroup_col] == subgroup]
-        
         if len(subgroup_data) == 0:
             continue
         
-        # Calculate mean scores for each service attribute
+        # mean scores for each service attribute
         scores = [subgroup_data[attr].mean() for attr in service_attributes]
-        # Use display names for axis (from utils)
+        
         display_attrs = [get_display_name(attr) for attr in service_attributes]
-        # Add trace to radar chart
         fig.add_trace(go.Scatterpolar(
             r=scores + [scores[0]],  # Close the polygon
             theta=display_attrs + [display_attrs[0]],
@@ -66,9 +63,9 @@ def create_radar_chart(df, service_attributes, subgroup_col, subgroup_values=Non
                 )
             ),
             showlegend=False,
-            title=None,  # Remove title since we have it in the layout
-            height=350,  # Match service quality chart height
-            margin=dict(l=20, r=40, t=40, b=40),  # Match service quality chart margins
+            title=None,
+            height=350,
+            margin=dict(l=20, r=40, t=40, b=40),
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
             uirevision='constant',

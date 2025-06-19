@@ -173,27 +173,23 @@ def create_rf_importance_chart(subgroup_data, service_attributes, selected_subgr
         rf = RandomForestClassifier(n_estimators=100, random_state=42)
         rf.fit(X_train, y_train)
         
-        # Get feature importance
+        # feature importance
         importance_dict = dict(zip(service_attributes, rf.feature_importances_))
-        
-        # Sort by importance
         sorted_importance = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)
         factors, importances = zip(*sorted_importance)
-        
-        # Truncate long factor names
         display_factors = [get_display_name(f) for f in factors]
         
-        # Create color scale based on importance
+        # color scale based on importance
         colors = []
         for importance in importances:
             if importance >= 0.15:
-                colors.append('#FF6B6B')  # Red for very high importance
+                colors.append('#FF6B6B')  # very high importance
             elif importance >= 0.10:
-                colors.append('#FFA726')  # Orange for high importance
+                colors.append('#FFA726')  # high importance
             elif importance >= 0.05:
-                colors.append('#FFD54F')  # Yellow for medium importance
+                colors.append('#FFD54F')  # medium importance
             else:
-                colors.append('#81C784')  # Green for lower importance
+                colors.append('#81C784')  # lower importance
         
         # Calculate accuracy
         accuracy = rf.score(X_test, y_test)
@@ -511,12 +507,12 @@ def generate_subgroup_info_header(df, group_col='Class', selected_subgroup=None,
     if 'satisfaction' in df.columns:
         satisfaction_rate = (subgroup_data['satisfaction'] == 'satisfied').mean() * 100
     
-    # Calculate overall service quality score if available
+    # overall service quality score
     service_score = 0
     if 'Service_Quality_Score' in subgroup_data.columns:
         service_score = subgroup_data['Service_Quality_Score'].mean()
     
-    # Accuracy display
+    # accuracy display
     accuracy_span = None
     if accuracy is not None:
         accuracy_span = html.Span(f"Accuracy: {accuracy:.1%}", style={'fontSize': '18px', 'color': '#000', 'marginLeft': '15px'})
