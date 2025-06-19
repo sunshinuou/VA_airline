@@ -9,6 +9,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 from dash import html, dcc
 import warnings
+from utils import get_display_name
 warnings.filterwarnings('ignore')
 
 class CustomerSegmentationAnalyzer:
@@ -245,15 +246,15 @@ class CustomerSegmentationAnalyzer:
             ))
         
         fig.update_layout(
-            xaxis_title='First Principal Component',
-            yaxis_title='Second Principal Component',
+            xaxis_title='PC1',
+            yaxis_title='PC2',
             xaxis=dict(
-                title='First Principal Component',
+                title='PC1',
                 titlefont=dict(size=20),
                 tickfont=dict(size=16)
             ),
             yaxis=dict(
-                title='Second Principal Component',
+                title='PC2',
                 titlefont=dict(size=20),
                 tickfont=dict(size=16)
             ),
@@ -305,10 +306,10 @@ class CustomerSegmentationAnalyzer:
         for profile in cluster_profiles:
             cluster_name = profile['Cluster']
             values = [profile[attr] for attr in self.service_attributes]
-            
+            display_attrs = [get_display_name(attr) for attr in self.service_attributes]
             fig.add_trace(go.Scatterpolar(
-                r=values,
-                theta=self.service_attributes,
+                r=values + [values[0]],
+                theta=display_attrs + [display_attrs[0]],
                 name=cluster_name,
                 fill='toself'
             ))
@@ -317,19 +318,22 @@ class CustomerSegmentationAnalyzer:
             polar=dict(
                 radialaxis=dict(
                     visible=True,
-                    range=[0, 5]
+                    range=[0, 5],
+                    tickvals=[0, 1, 2, 3, 4, 5],
+                    ticktext=['0', '1', '2', '3', '4', '5'],
+                    tickfont=dict(size=20, family="Arial")
+                ),
+                angularaxis=dict(
+                    tickfont=dict(size=20, family="Arial"),
+                    rotation=0,
+                    direction="clockwise"
                 )
             ),
             showlegend=True,
-            title={
-                'text': 'Service Profiles by Cluster',
-                'x': 0.5,
-                'xanchor': 'center',
-                'font': {'size': 16, 'color': '#1a237e'}
-            },
-            height=400,
-            margin=dict(l=20, r=20, t=50, b=20),
-            legend=dict(x=0.02, y=0.98)
+            height=350,
+            margin=dict(l=20, r=40, t=40, b=40),
+            legend=dict(x=0.02, y=0.98),
+            font=dict(size=20, family="Arial")
         )
         
         return fig
@@ -375,150 +379,23 @@ class CustomerSegmentationAnalyzer:
         )
         
         # Update axes
-        fig.update_xaxes(title_text="Customer Clusters")
-        fig.update_yaxes(title_text="Satisfaction Rate (%)", secondary_y=False)
-        fig.update_yaxes(title_text="Number of Customers", secondary_y=True)
+        fig.update_xaxes(title_text="Passenger Clusters", titlefont=dict(size=20, family="Arial"), tickfont=dict(size=20, family="Arial"))
+        fig.update_yaxes(title_text="Satisfaction Rate (%)", secondary_y=False, titlefont=dict(size=20, family="Arial"), tickfont=dict(size=20, family="Arial"))
+        fig.update_yaxes(title_text="Number of Passengers", secondary_y=True, titlefont=dict(size=20, family="Arial"), tickfont=dict(size=20, family="Arial"))
         
         fig.update_layout(
             title={
-                'text': 'Cluster Comparison: Satisfaction vs Size',
+                'text': 'Satisfaction vs Size',  # Only keep the part after the colon
                 'x': 0.5,
                 'xanchor': 'center',
-                'font': {'size': 16, 'color': '#1a237e'}
+                'font': {'size': 20, 'color': '#1a237e', 'family': 'Arial'}
             },
             height=400,
             margin=dict(l=20, r=20, t=50, b=20),
-            legend=dict(x=0.02, y=0.98)
+            legend=dict(x=0.02, y=0.98, font=dict(size=20, family="Arial")),
+            font=dict(size=20, family="Arial")
         )
+        # Change bar color to deep blue
+        fig.data[0].marker.color = '#1a237e'
         
         return fig
-    
-    def generate_cluster_insights(self):
-        """
-        Generate actionable insights from cluster analysis
-        """
-        if 'Cluster' not in self.df.columns:
-            self.perform_kmeans_clustering()
-        
-        cluster_analysis = self.analyze_cluster_characteristics()
-        n_clusters = len(cluster_analysis)
-        
-        insights = []
-        
-        # Overall clustering quality
-        silhouette = self.cluster_results['kmeans']['silhouette_score']
-        if silhouette >= 0.5:
-            quality = "Excellent"
-            quality_color = "#4caf50"
-        elif silhouette >= 0.3:
-            quality = "Good"
-            quality_color = "#ff9800"
-        else:
-            quality = "Fair"
-            quality_color = "#f44336"
-        
-        insights.append(html.P([
-            html.Span("🎯 Clustering Quality: ", style={'fontWeight': 'bold'}),
-            html.Span(f"{quality} (Silhouette: {silhouette:.3f})", 
-                     style={'color': quality_color, 'fontWeight': 'bold'})
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
-        # Find best and worst performing clusters
-        best_cluster = max(cluster_analysis.items(), key=lambda x: x[1]['satisfaction_rate'])
-        worst_cluster = min(cluster_analysis.items(), key=lambda x: x[1]['satisfaction_rate'])
-        
-        insights.append(html.P([
-            html.Span("🏆 Highest Satisfaction: ", style={'fontWeight': 'bold'}),
-            f"Cluster {best_cluster[0]} ({best_cluster[1]['satisfaction_rate']:.1f}%)"
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
-        insights.append(html.P([
-            html.Span("⚠️ Needs Attention: ", style={'fontWeight': 'bold'}),
-            f"Cluster {worst_cluster[0]} ({worst_cluster[1]['satisfaction_rate']:.1f}%)"
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
-        # Cluster size distribution
-        largest_cluster = max(cluster_analysis.items(), key=lambda x: x[1]['size'])
-        smallest_cluster = min(cluster_analysis.items(), key=lambda x: x[1]['size'])
-        
-        insights.append(html.P([
-            html.Span("📊 Largest Segment: ", style={'fontWeight': 'bold'}),
-            f"Cluster {largest_cluster[0]} ({largest_cluster[1]['size_percentage']:.1f}% of customers)"
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
-        # Strategic recommendations
-        if best_cluster[1]['satisfaction_rate'] - worst_cluster[1]['satisfaction_rate'] > 30:
-            recommendation = "High variation - focus on underperforming segments"
-            rec_color = "#ff6b6b"
-        elif n_clusters > 5:
-            recommendation = "Many segments - consider consolidation strategy"
-            rec_color = "#ff9800"
-        else:
-            recommendation = "Balanced segmentation - optimize each cluster"
-            rec_color = "#4caf50"
-        
-        insights.append(html.P([
-            html.Span("💡 Strategy: ", style={'fontWeight': 'bold'}),
-            html.Span(recommendation, style={'color': rec_color, 'fontWeight': 'bold'})
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
-        return html.Div(insights)
-
-def create_clustering_dashboard_component(df, service_attributes):
-    """
-    Create the complete clustering dashboard component for predictive analysis
-    """
-    # Initialize clustering analyzer
-    analyzer = CustomerSegmentationAnalyzer(df, service_attributes)
-    
-    # Perform clustering analysis
-    analyzer.perform_kmeans_clustering()
-    analyzer.perform_pca_analysis()
-    
-    # Create visualizations
-    pca_chart = analyzer.create_cluster_visualization('pca_scatter')
-    comparison_chart = analyzer.create_cluster_visualization('cluster_comparison')
-    
-    # Generate insights
-    insights = analyzer.generate_cluster_insights()
-    
-    # Create the dashboard component
-    dashboard_component = html.Div([
-        # Chart selection dropdown
-        html.Div([
-            html.Label("Clustering View:", style={'fontWeight': 'bold', 'fontSize': '12px'}),
-            dcc.Dropdown(
-                id='clustering-chart-selector',
-                options=[
-                    {'label': 'PCA Scatter Plot', 'value': 'pca_scatter'},
-                    {'label': 'Cluster Comparison', 'value': 'cluster_comparison'},
-                    {'label': 'Service Profiles', 'value': 'cluster_profiles'},
-                ],
-                value='pca_scatter',
-                clearable=False,
-                style={'fontSize': '12px', 'marginBottom': '10px'}
-            )
-        ], style={'marginBottom': '15px'}),
-        
-        # Chart area
-        dcc.Graph(
-            id='clustering-chart',
-            figure=pca_chart,
-            style={'height': '300px', 'marginBottom': '15px'},
-            config={'displayModeBar': False}
-        ),
-        
-        # Insights section
-        html.Div([
-            html.H6("🔍 Clustering Insights", 
-                   style={'color': '#1a237e', 'fontSize': '14px', 'marginBottom': '10px'}),
-            insights
-        ], style={
-            'backgroundColor': '#f8f9fa',
-            'padding': '10px',
-            'borderRadius': '5px',
-            'border': '1px solid #e0e0e0'
-        })
-    ])
-    
-    return dashboard_component, analyzer

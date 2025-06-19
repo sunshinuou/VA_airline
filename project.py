@@ -52,9 +52,9 @@ def generate_subgroup_info_header_simple(df, group_col='Class', selected_subgrou
                style={'color': '#1a237e', 'marginBottom': '8px', 'fontWeight': 'bold', 'fontSize': '22px'}),
         html.Div([
             html.Span(f"Satisfaction: {satisfaction_rate:.1f}%", 
-                     style={'marginRight': '20px', 'fontSize': '20px', 'color': '#4caf50'}),
+                     style={'marginRight': '20px', 'fontSize': '23px', 'color': '#4caf50'}),
             html.Span(f"Avg Service: {service_score:.2f}/5.0", 
-                     style={'fontSize': '20px', 'color': '#2196f3'})
+                     style={'fontSize': '23px', 'color': '#2196f3'})
         ])
     ])
 
@@ -182,33 +182,41 @@ def create_dash_app(df, service_attributes):
         total_passengers = len(sampled_df)
         summary_items = html.Div([
             html.Div([
-                html.H4(f"{total_passengers:,}", style={'color': '#d32f2f', 'margin': '0', 'fontSize': '20px'}),
-                html.P("Total Passengers", style={'color': '#666', 'margin': '5px 0', 'fontSize': '20px'})
+                html.H4(f"{total_passengers:,}", style={'color': '#d32f2f', 'margin': '0', 'fontSize': '23px'}),
+                html.P("Total Passengers", style={'color': '#666', 'margin': '5px 0', 'fontSize': '23px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
             html.Div([
                 html.H4(f"{(sampled_df['satisfaction'] == 'satisfied').mean() * 100:.1f}%", 
-                       style={'color': '#4caf50', 'margin': '0', 'fontSize': '20px'}),
-                html.P("Satisfaction Rate", style={'color': '#666', 'margin': '5px 0', 'fontSize': '20px'})
+                       style={'color': '#4caf50', 'margin': '0', 'fontSize': '23px'}),
+                html.P("Satisfaction Rate", style={'color': '#666', 'margin': '5px 0', 'fontSize': '23px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'}),
             html.Div([
                 html.H4(f"{sampled_df['Service_Quality_Score'].mean():.2f}/5.0", 
-                       style={'color': '#2196f3', 'margin': '0', 'fontSize': '20px'}),
-                html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '20px'})
+                       style={'color': '#2196f3', 'margin': '0', 'fontSize': '23px'}),
+                html.P("Avg Service Score", style={'color': '#666', 'margin': '5px 0', 'fontSize': '23px'})
             ], style={'textAlign': 'center', 'padding': '10px', 'width': '33.33%'})
         ], style={'display': 'flex', 'justifyContent': 'space-between', 'minHeight': '80px', 'marginBottom': '6px'})
         
         # Service Factor Rankings
-        service_factors_fig = create_service_factors_chart(
+        service_factors_fig = None
+        accuracy = None
+        result = create_service_factors_chart(
             sampled_df, 
             service_attributes, 
             group_col=dataset_subgroup,
             selected_subgroup=selected_specific_subgroup,
             chart_type='rf_importance'
         )
-        subgroup_info = generate_subgroup_info_header_simple(
+        if isinstance(result, tuple):
+            service_factors_fig, accuracy = result
+        else:
+            service_factors_fig = result
+            accuracy = None
+        subgroup_info = generate_subgroup_info_header(
             sampled_df, 
             group_col=dataset_subgroup,
-            selected_subgroup=selected_specific_subgroup
+            selected_subgroup=selected_specific_subgroup,
+            accuracy=accuracy
         )
         return (radar_fig, parallel_fig, summary_items, distribution_fig, 
                 service_factors_fig, subgroup_info)

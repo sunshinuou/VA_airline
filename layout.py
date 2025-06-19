@@ -277,7 +277,7 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                 
                 # Right: Passenger Segmentation Analysis (containing clustering functionality)
                 html.Div([
-                    html.H5("Passenger Segmentation Analysis", className="mb-3", style={'color': '#1a237e', 'fontSize': '28px', 'fontWeight': 'bold'}),
+                    html.H5("Passenger Cluster Analysis", className="mb-3", style={'color': '#1a237e', 'fontSize': '28px', 'fontWeight': 'bold'}),
                     
                     # Chart selection dropdown for clustering analysis
                     html.Div([
@@ -285,8 +285,8 @@ def create_compact_layout(subgroup_options, color_options=None, pc_dimension_opt
                         dcc.Dropdown(
                             id='clustering-chart-selector',
                             options=[
-                                {'label': 'Passenger Segments (PCA)', 'value': 'pca_scatter'},
-                                {'label': 'Segment Comparison', 'value': 'cluster_comparison'},
+                                {'label': 'Passenger Clusters (PCA)', 'value': 'pca_scatter'},
+                                {'label': 'Cluster Comparison', 'value': 'cluster_comparison'},
                                 {'label': 'Service Profiles', 'value': 'cluster_profiles'}
                             ],
                             value='pca_scatter',

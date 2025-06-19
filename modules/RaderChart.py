@@ -29,7 +29,7 @@ def create_radar_chart(df, service_attributes, subgroup_col, subgroup_values=Non
         
         # Calculate mean scores for each service attribute
         scores = [subgroup_data[attr].mean() for attr in service_attributes]
-        # Use display names for axis
+        # Use display names for axis (from utils)
         display_attrs = [get_display_name(attr) for attr in service_attributes]
         # Add trace to radar chart
         fig.add_trace(go.Scatterpolar(
@@ -57,22 +57,22 @@ def create_radar_chart(df, service_attributes, subgroup_col, subgroup_values=Non
                     range=[min_score, max_score],
                     tickvals=list(range(int(min_score), int(max_score)+1)),
                     ticktext=[f"{i}" for i in range(int(min_score), int(max_score)+1)],
-                    tickfont=dict(size=15)
+                    tickfont=dict(size=20, family="Arial")
                 ),
                 angularaxis=dict(
-                    tickfont=dict(size=15),
+                    tickfont=dict(size=20, family="Arial"),
                     rotation=0,
                     direction="clockwise"
                 )
             ),
             showlegend=False,
             title=None,  # Remove title since we have it in the layout
-            height=400,  # Chart height
-            margin=dict(l=80, r=80, t=20, b=80),  # Balanced margins
+            height=350,  # Match service quality chart height
+            margin=dict(l=20, r=40, t=40, b=40),  # Match service quality chart margins
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
             uirevision='constant',
-            font=dict(size=15)
+            font=dict(size=20, family="Arial")
         )
     
     return fig

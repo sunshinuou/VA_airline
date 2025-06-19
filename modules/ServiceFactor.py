@@ -214,12 +214,6 @@ def create_rf_importance_chart(subgroup_data, service_attributes, selected_subgr
         ])
         
         fig.update_layout(
-            title={
-                'text': f'RF Feature Importance - {selected_subgroup}  Accuracy: {accuracy:.1%}</sub>',
-                'x': 0.5,
-                'xanchor': 'center',
-                'font': {'size': 20, 'color': '#1a237e'}
-            },
             xaxis=dict(
                 title='Feature Importance',
                 range=[0, max(importances) * 1.15],
@@ -242,7 +236,7 @@ def create_rf_importance_chart(subgroup_data, service_attributes, selected_subgr
         )
         fig.update_traces(textfont_size=20)
         
-        return fig
+        return fig, accuracy
         
     except ImportError:
         return go.Figure().add_annotation(
@@ -486,7 +480,7 @@ def get_subgroup_comparison_data(df, service_attributes, group_col='Class'):
     
     return comparison_data
 
-def generate_subgroup_info_header(df, group_col='Class', selected_subgroup=None):
+def generate_subgroup_info_header(df, group_col='Class', selected_subgroup=None, accuracy=None):
     """
     Generate header information for the selected subgroup
     """
@@ -522,15 +516,21 @@ def generate_subgroup_info_header(df, group_col='Class', selected_subgroup=None)
     if 'Service_Quality_Score' in subgroup_data.columns:
         service_score = subgroup_data['Service_Quality_Score'].mean()
     
+    # Accuracy display
+    accuracy_span = None
+    if accuracy is not None:
+        accuracy_span = html.Span(f"Accuracy: {accuracy:.1%}", style={'fontSize': '18px', 'color': '#000', 'marginLeft': '15px'})
+    
     return html.Div([
         html.H6(f"Analysis for {selected_subgroup}", 
-               style={'color': '#1a237e', 'marginBottom': '8px', 'fontWeight': 'bold'}),
+               style={'color': '#1a237e', 'marginBottom': '8px', 'fontWeight': 'bold', 'fontSize': '20px'}),
         html.Div([
             html.Span(f"Passengers: {total_passengers:,}", 
-                     style={'marginRight': '15px', 'fontSize': '12px'}),
+                     style={'marginRight': '15px', 'fontSize': '18px', 'color': '#d32f2f'}),
             html.Span(f"Satisfaction: {satisfaction_rate:.1f}%", 
-                     style={'marginRight': '15px', 'fontSize': '12px', 'color': '#4caf50'}),
+                     style={'marginRight': '15px', 'fontSize': '18px', 'color': '#4caf50'}),
             html.Span(f"Avg Service: {service_score:.2f}/5.0", 
-                     style={'fontSize': '12px', 'color': '#2196f3'})
+                     style={'fontSize': '18px', 'color': '#2196f3'}),
+            accuracy_span if accuracy_span else None
         ])
     ])
