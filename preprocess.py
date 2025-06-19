@@ -7,7 +7,6 @@ def preprocess_airline_data(df):
     if df is None:
         return None, None
     
-    # Create a copy to avoid modifying original data
     df_processed = df.copy()
     
     print("=== DATA PREPROCESSING ===")
@@ -56,6 +55,7 @@ def preprocess_airline_data(df):
                                                          bins=[-1, 0, 15, 60, float('inf')],
                                                          labels=['No Delay', 'Short (1-15min)', 'Medium (16-60min)', 'Long (>60min)'])
     
+    # Create arrival delay categories
     if 'Arrival Delay in Minutes' in df_processed.columns:
         df_processed['Arrival_Delay_Category'] = pd.cut(df_processed['Arrival Delay in Minutes'],
                                                        bins=[-1, 0, 15, 60, float('inf')],
