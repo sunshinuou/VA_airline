@@ -49,8 +49,8 @@ def create_service_factors_chart(df, service_attributes, group_col='Class', sele
         return create_average_ratings_chart(subgroup_data, service_attributes, selected_subgroup)
     elif chart_type == 'rf_importance':
         return create_rf_importance_chart(subgroup_data, service_attributes, selected_subgroup)
-    else:
-        return create_combined_chart(subgroup_data, service_attributes, selected_subgroup)
+    #else:
+        #return create_combined_chart(subgroup_data, service_attributes, selected_subgroup)
 
 def create_average_ratings_chart(subgroup_data, service_attributes, selected_subgroup):
     """
@@ -83,13 +83,13 @@ def create_average_ratings_chart(subgroup_data, service_attributes, selected_sub
     colors = []
     for rating in sorted_ratings:
         if rating >= 4.0:
-            colors.append('#4CAF50')  # Green for high ratings
+            colors.append('#4CAF50')  
         elif rating >= 3.0:
-            colors.append('#FFC107')  # Yellow for medium ratings
+            colors.append('#FFC107') 
         elif rating >= 2.0:
-            colors.append('#FF9800')  # Orange for low-medium ratings
+            colors.append('#FF9800')
         else:
-            colors.append('#F44336')  # Red for low ratings
+            colors.append('#F44336') 
     
     # Create horizontal bar chart
     fig = go.Figure(data=[
@@ -303,29 +303,8 @@ def generate_average_insights(subgroup_data, service_attributes, selected_subgro
     # Generate insights
     insights = []
     
-    insights.append(html.P([
-        html.Span("🏆 Best performing: ", style={'fontWeight': 'bold'}),
-        f"{best_service[0][:30]} ({best_service[1]:.2f}/5.0)"
-    ], style={'margin': '5px 0', 'fontSize': '12px'}))
-    
-    insights.append(html.P([
-        html.Span("⚠️ Needs improvement: ", style={'fontWeight': 'bold'}),
-        f"{worst_service[0][:30]} ({worst_service[1]:.2f}/5.0)"
-    ], style={'margin': '5px 0', 'fontSize': '12px'}))
-    
-    if excellent_services:
-        insights.append(html.P([
-            html.Span("✅ Excellent services: ", style={'fontWeight': 'bold', 'color': '#4caf50'}),
-            f"{len(excellent_services)} factors rated ≥4.0"
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-    
-    if poor_services:
-        insights.append(html.P([
-            html.Span("🔧 Priority improvements: ", style={'fontWeight': 'bold', 'color': '#f44336'}),
-            f"{len(poor_services)} factors rated <2.5"
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-    
     return html.Div(insights)
+
 
 def generate_rf_insights(subgroup_data, service_attributes, selected_subgroup):
     """
@@ -346,7 +325,7 @@ def generate_rf_insights(subgroup_data, service_attributes, selected_subgroup):
         # Check data sufficiency
         if len(subgroup_data) < 30 or len(y.unique()) < 2:
             return html.Div([
-                html.P("⚠️ Insufficient data for Random Forest analysis", 
+                html.P("Insufficient data for Random Forest analysis", 
                       style={'color': '#ff9800', 'fontWeight': 'bold', 'fontSize': '12px'}),
                 html.P(f"Need: ≥30 samples + both satisfied/dissatisfied customers", 
                       style={'color': '#666', 'fontSize': '11px'}),
@@ -381,51 +360,6 @@ def generate_rf_insights(subgroup_data, service_attributes, selected_subgroup):
         
         insights = []
         
-        # Model quality
-        if accuracy >= 0.85:
-            model_quality = "Excellent"
-            quality_color = "#4caf50"
-        elif accuracy >= 0.75:
-            model_quality = "Good" 
-            quality_color = "#ff9800"
-        else:
-            model_quality = "Fair"
-            quality_color = "#f44336"
-        
-        insights.append(html.P([
-            html.Span("🤖 Model Quality: ", style={'fontWeight': 'bold'}),
-            html.Span(f"{model_quality} ({accuracy:.1%} accuracy)", 
-                     style={'color': quality_color, 'fontWeight': 'bold'})
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
-        # Top driving factor
-        insights.append(html.P([
-            html.Span("🎯 Top Driver: ", style={'fontWeight': 'bold'}),
-            f"{top_factor[0][:25]} ({top_factor[1]:.1%})"
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
-        # High impact factors count
-        insights.append(html.P([
-            html.Span("⚡ High Impact: ", style={'fontWeight': 'bold', 'color': '#ff6b6b'}),
-            f"{len(high_importance_factors)} factors >10% importance"
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
-        # Strategic recommendation
-        if len(high_importance_factors) <= 3:
-            recommendation = "Focus on few key drivers"
-            rec_color = "#4caf50"
-        elif len(high_importance_factors) <= 6:
-            recommendation = "Balanced multi-factor approach"
-            rec_color = "#ff9800"
-        else:
-            recommendation = "Systematic broad improvement"
-            rec_color = "#2196f3"
-        
-        insights.append(html.P([
-            html.Span("📋 Strategy: ", style={'fontWeight': 'bold'}),
-            html.Span(recommendation, style={'color': rec_color, 'fontWeight': 'bold'})
-        ], style={'margin': '5px 0', 'fontSize': '12px'}))
-        
         return html.Div(insights)
         
     except ImportError:
@@ -434,21 +368,6 @@ def generate_rf_insights(subgroup_data, service_attributes, selected_subgroup):
     except Exception as e:
         return html.Div(f"RF Analysis Error: {str(e)[:50]}...", 
                        style={'color': '#f44336', 'fontStyle': 'italic', 'fontSize': '12px'})
-
-def generate_combined_insights(subgroup_data, service_attributes, selected_subgroup):
-    """
-    Generate combined insights from both average ratings and RF analysis
-    """
-    avg_insights = generate_average_insights(subgroup_data, service_attributes, selected_subgroup)
-    rf_insights = generate_rf_insights(subgroup_data, service_attributes, selected_subgroup)
-    
-    return html.Div([
-        html.H6("📊 Rating Analysis", style={'color': '#1976d2', 'fontSize': '13px', 'marginBottom': '5px'}),
-        avg_insights,
-        html.Hr(style={'margin': '10px 0'}),
-        html.H6("🤖 Impact Analysis", style={'color': '#7b1fa2', 'fontSize': '13px', 'marginBottom': '5px'}),
-        rf_insights
-    ])
 
 def get_subgroup_comparison_data(df, service_attributes, group_col='Class'):
     """

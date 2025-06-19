@@ -13,17 +13,14 @@ def preprocess_airline_data(df):
     print(f"Original shape: {df_processed.shape}")
     
     # 1. Handle missing values
-    print(f"\nMissing values before preprocessing:")
     missing_summary = df_processed.isnull().sum()
-    for col, count in missing_summary[missing_summary > 0].items():
-        print(f"  {col}: {count} ({count/len(df_processed)*100:.1f}%)")
+    
     
     # Handle arrival delay missing values
     if 'Arrival Delay in Minutes' in df_processed.columns:
         before_fill = df_processed['Arrival Delay in Minutes'].isnull().sum()
         df_processed['Arrival Delay in Minutes'] = df_processed['Arrival Delay in Minutes'].fillna(0)
-        print(f"Filled {before_fill} missing arrival delay values with 0")
-    
+        
     # Remove rows with missing satisfaction data (critical for analysis)
     if 'satisfaction' in df_processed.columns:
         before_drop = len(df_processed)
@@ -39,8 +36,7 @@ def preprocess_airline_data(df):
     if 'satisfaction' in df_processed.columns:
         df_processed['satisfaction_binary'] = (df_processed['satisfaction'] == 'satisfied').astype(int)
         satisfaction_counts = df_processed['satisfaction'].value_counts()
-        print(f"Satisfaction distribution: {dict(satisfaction_counts)}")
-    
+        
     # Create age groups for better analysis
     if 'Age' in df_processed.columns:
         age_labels = ['Young (≤25)', 'Adult (26-40)', 'Middle-aged (41-60)', 'Senior (>60)']
@@ -72,16 +68,16 @@ def preprocess_airline_data(df):
     
     # Only include attributes that exist in the dataset
     service_attributes = [attr for attr in potential_service_attributes if attr in df_processed.columns]
-    print(f"\nFound {len(service_attributes)} service attributes:")
-    for attr in service_attributes:
-        print(f"  - {attr}")
+    #print(f"\nFound {len(service_attributes)} service attributes:")
+    #for attr in service_attributes:
+        #print(f"  - {attr}")
     
     # 4. Validate and clean service ratings
     for attr in service_attributes:
         # Check the range of values
         min_val = df_processed[attr].min()
         max_val = df_processed[attr].max()
-        print(f"{attr}: range {min_val} to {max_val}")
+        
         
         # Clip values to valid range if needed (assuming 1-5 or 0-5 scale)
         if min_val >= 0 and max_val <= 5:
@@ -92,8 +88,7 @@ def preprocess_airline_data(df):
     # 5. Create composite scores
     if service_attributes:
         df_processed['Service_Quality_Score'] = df_processed[service_attributes].mean(axis=1)
-        print(f"Created Service Quality Score (avg: {df_processed['Service_Quality_Score'].mean():.2f})")
-    
+        
     # 6. Feature engineering for subgroup analysis
     if 'Type of Travel' in df_processed.columns and 'Class' in df_processed.columns:
         df_processed['Travel_Experience'] = df_processed['Type of Travel'] + '_' + df_processed['Class']
